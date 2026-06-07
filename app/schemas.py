@@ -11,6 +11,7 @@ class UserOut(BaseModel):
     id: int
     name: str
     phone: str
+    score: int
 
     class Config:
         orm_mode = True
@@ -46,19 +47,37 @@ class QuestionOut(BaseModel):
         orm_mode = True
 
 
+class QueueJoinRequest(BaseModel):
+    user_id: int
+    stake: int
+
+
+class QueueJoinResponse(BaseModel):
+    message: str
+    game_id: Optional[int] = None
+    status: str
+
+
 class GamePlayerOut(BaseModel):
     user_id: int
-    name: str
     current_game_score: int
     rank: Optional[int] = None
+
+    class Config:
+        orm_mode = True
 
 
 class GameOut(BaseModel):
     id: int
+    stake: int
     status: str
+    winner_user_id: Optional[int] = None
     current_turn_user_id: Optional[int] = None
     turn_deadline: Optional[str] = None
     players: List[GamePlayerOut]
+
+    class Config:
+        orm_mode = True
 
 
 class AnswerRequest(BaseModel):
