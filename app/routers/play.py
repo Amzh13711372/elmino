@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -53,7 +53,6 @@ def finish_game(game, winner_user_id: int, db: Session):
 
     for index, player in enumerate(sorted_players, start=1):
         player.rank = index
-
         user = db.query(models.User).filter(models.User.id == player.user_id).first()
         if user:
             if index == 1:
@@ -97,7 +96,7 @@ def submit_answer(
     if game.current_turn_user_id != payload.user_id:
         raise HTTPException(status_code=400, detail="It is not your turn")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     if game.turn_deadline and now > game.turn_deadline:
         player.current_game_score = max(0, player.current_game_score - 50)
@@ -151,3 +150,4 @@ def submit_answer(
         "next_turn_user_id": next_user_id,
         "turn_deadline": str(game.turn_deadline)
     }
+

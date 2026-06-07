@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
+
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
 
 from app.database import Base
 
@@ -34,7 +35,7 @@ class GameQueueEntry(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     stake = Column(Integer, nullable=False)
     status = Column(String, default="waiting", nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", back_populates="queue_entries")
 
@@ -46,7 +47,7 @@ class Game(Base):
     stake = Column(Integer, nullable=False)
     status = Column(String, default="waiting", nullable=False)
     winner_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     players = relationship("GamePlayer", back_populates="game")
 
