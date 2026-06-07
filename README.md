@@ -1,12 +1,13 @@
 # Elmino API
 
-A simple backend API for managing players in the Elmino project.
+A backend API for managing players in the Elmino project.
 
 ## Tech Stack
 - FastAPI
 - SQLite
 - SQLAlchemy
 - Uvicorn
+- Pytest
 
 ## Features
 - Get all players
@@ -17,21 +18,56 @@ A simple backend API for managing players in the Elmino project.
 - Persistent data storage with SQLite
 - Swagger API docs
 
-## Run the project
+## Project Structure
+- `app/` - application source code
+- `tests/` - test files
+- `requirements.txt` - project dependencies
+- `README.md` - project documentation
 
-uvicorn main:app --host 0.0.0.0 --port 8000
+## Installation
+Install dependencies with:
 
-## API Docs
+
+```bash
+pip install -r requirements.txt
+
+```
+
+## Run the Project
+Run the API server with:
+
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+```
+
+## API Documentation
+After running the server, open:
+
+
+```text
 http://127.0.0.1:8000/docs
 
-## Endpoints
-- GET /
-- GET /players
-- GET /players/{player_id}
-- POST /players
-- PUT /players/{player_id}
-- DELETE /players/{player_id}
+```
+
+## Run Tests
+Run tests with:
+
+
+```bash
+pytest
+
+```
+
+## Main Endpoints
+- `GET /`
+- `GET /players`
+- `GET /players/{player_id}`
+- `POST /players`
+- `PUT /players/{player_id}`
+- `DELETE /players/{player_id}`
 
 ## Notes
-- Data is stored in elmino.db
-- API is ready for connection to Flutter or other clients
+- Data is stored locally in `elmino.db`
+- The API can be connected to Flutter or other clients
