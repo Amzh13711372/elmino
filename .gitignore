@@ -1,5 +1,10 @@
 __pycache__/
 *.pyc
-elmino.db
+*.pyo
+*.pyd
+.venv/
+venv/
 .env
-.pytest_cache/
+logs/
+server.pid
+app/main.py.bak

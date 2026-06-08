@@ -122,6 +122,9 @@ class AnswerOut(BaseModel):
     winner_user_id: Optional[int]
     next_turn_user_id: Optional[int]
 
+
 class AnswerSubmit(BaseModel):
     user_id: int
+    question_id: int
     selected_option: int
+

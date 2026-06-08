@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.database import get_db
 from app import models, schemas
 
 router = APIRouter()
+
 
 @router.post("/games/{game_id}/answer")
 def submit_answer(
@@ -18,16 +20,19 @@ def submit_answer(
     if game.status != "active":
         raise HTTPException(status_code=400, detail="Game is not active")
 
-    if game.current_turn_user_id != payload.user_id:
-        raise HTTPException(status_code=400, detail="It is not your turn")
-
     game_player = db.query(models.GamePlayer).filter(
         models.GamePlayer.game_id == game_id,
         models.GamePlayer.user_id == payload.user_id
     ).first()
 
     if not game_player:
-        raise HTTPException(status_code=404, detail="Player not found in this game")
+        raise HTTPException(status_code=403, detail="User is not a participant in this game")
+
+    if game.current_turn_user_id != payload.user_id:
+        raise HTTPException(status_code=400, detail="It is not your turn")
+
+    if payload.question_id != game.current_question_id:
+        raise HTTPException(status_code=400, detail="Invalid question_id for current turn")
 
     question = db.query(models.Question).filter(
         models.Question.id == game.current_question_id
@@ -60,8 +65,20 @@ def submit_answer(
         game.current_turn_user_id = next_turn_user_id
     else:
         game.status = "finished"
-        winner = max(players, key=lambda p: p.current_game_score)
-        game.winner_user_id = winner.user_id
+
+        max_score = max(player.current_game_score for player in players)
+        top_players = [
+            player for player in players
+            if player.current_game_score == max_score
+        ]
+
+        if len(top_players) == 1:
+            game.winner_user_id = top_players[0].user_id
+        else:
+            game.winner_user_id = None
+
+        game.current_turn_user_id = None
+        game.current_question_id = None
 
     db.commit()
     db.refresh(game)
@@ -75,6 +92,7 @@ def submit_answer(
         "next_turn_user_id": game.current_turn_user_id,
         "current_question_id": game.current_question_id,
     }
+
 
 @router.get("/games/{game_id}")
 def get_game(game_id: int, db: Session = Depends(get_db)):
