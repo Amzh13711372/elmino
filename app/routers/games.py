@@ -1,95 +1,104 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-
 from app.database import get_db
-from app.models import Game, GamePlayer, User
+from app import models, schemas
 
-router = APIRouter(prefix="/games", tags=["Games"])
+router = APIRouter()
 
-
-@router.post("/")
-def create_game(db: Session = Depends(get_db)):
-    game = Game(
-        stake=0,
-        status="waiting"
-    )
-    db.add(game)
-    db.commit()
-    db.refresh(game)
-
-    return {
-        "game_id": game.id,
-        "status": game.status,
-        "stake": game.stake
-    }
-
-
-@router.post("/join")
-def join_game(user_id: int, game_id: int = 1, db: Session = Depends(get_db)):
-    game = db.query(Game).filter(Game.id == game_id).first()
+@router.post("/games/{game_id}/answer")
+def submit_answer(
+    game_id: int,
+    payload: schemas.AnswerSubmit,
+    db: Session = Depends(get_db)
+):
+    game = db.query(models.Game).filter(models.Game.id == game_id).first()
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if game.status != "active":
+        raise HTTPException(status_code=400, detail="Game is not active")
 
-    existing = db.query(GamePlayer).filter(
-        GamePlayer.game_id == game_id,
-        GamePlayer.user_id == user_id
+    if game.current_turn_user_id != payload.user_id:
+        raise HTTPException(status_code=400, detail="It is not your turn")
+
+    game_player = db.query(models.GamePlayer).filter(
+        models.GamePlayer.game_id == game_id,
+        models.GamePlayer.user_id == payload.user_id
     ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="User already joined this game")
 
-    game_player = GamePlayer(
-        game_id=game_id,
-        user_id=user_id,
-    )
-    db.add(game_player)
+    if not game_player:
+        raise HTTPException(status_code=404, detail="Player not found in this game")
 
-    if game.status == "waiting":
-        game.status = "active"
+    question = db.query(models.Question).filter(
+        models.Question.id == game.current_question_id
+    ).first()
+
+    if not question:
+        raise HTTPException(status_code=404, detail="Current question not found")
+
+    is_correct = payload.selected_option == question.correct_option
+
+    if is_correct:
+        game_player.current_game_score += 1
+
+    players = db.query(models.GamePlayer).filter(
+        models.GamePlayer.game_id == game.id
+    ).all()
+
+    player_ids = [p.user_id for p in players]
+
+    current_index = player_ids.index(game_player.user_id)
+    next_index = (current_index + 1) % len(player_ids)
+    next_turn_user_id = player_ids[next_index]
+
+    next_question = db.query(models.Question).filter(
+        models.Question.id == game.current_question_id + 1
+    ).first()
+
+    if next_question:
+        game.current_question_id = next_question.id
+        game.current_turn_user_id = next_turn_user_id
+    else:
+        game.status = "finished"
+        winner = max(players, key=lambda p: p.current_game_score)
+        game.winner_user_id = winner.user_id
 
     db.commit()
     db.refresh(game)
 
-    all_players = db.query(GamePlayer).filter(GamePlayer.game_id == game_id).all()
-
     return {
-        "message": f"User {user_id} joined game {game_id}",
-        "game_id": game.id,
-        "status": game.status,
-        "player_ids": [p.user_id for p in all_players]
+        "message": "Answer submitted successfully",
+        "is_correct": is_correct,
+        "your_score": game_player.current_game_score,
+        "game_status": game.status,
+        "winner_user_id": game.winner_user_id,
+        "next_turn_user_id": game.current_turn_user_id,
+        "current_question_id": game.current_question_id,
     }
 
-
-@router.get("/{game_id}")
+@router.get("/games/{game_id}")
 def get_game(game_id: int, db: Session = Depends(get_db)):
-    game = db.query(Game).filter(Game.id == game_id).first()
+    game = db.query(models.Game).filter(models.Game.id == game_id).first()
+
     if not game:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    game_players = db.query(GamePlayer).filter(GamePlayer.game_id == game_id).all()
-
-    players = []
-    for gp in game_players:
-        user = db.query(User).filter(User.id == gp.user_id).first()
-
-        player_data = {
-            "user_id": gp.user_id,
-            "name": user.name if user else None
-        }
-
-        if hasattr(gp, "current_game_score"):
-            player_data["current_game_score"] = gp.current_game_score
-
-        players.append(player_data)
+    players = db.query(models.GamePlayer).filter(
+        models.GamePlayer.game_id == game.id
+    ).all()
 
     return {
         "id": game.id,
-        "game_id": game.id,
         "status": game.status,
         "stake": game.stake,
-        "players": players
+        "current_turn_user_id": game.current_turn_user_id,
+        "current_question_id": game.current_question_id,
+        "winner_user_id": game.winner_user_id,
+        "players": [
+            {
+                "user_id": p.user_id,
+                "score": p.current_game_score
+            }
+            for p in players
+        ]
     }
-
