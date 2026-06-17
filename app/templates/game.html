@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="12">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بازی علمینو</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      background: #f3f8ff;
+      color: #0f172a;
+    }
+
+    .container {
+      width: min(960px, 92%);
+      margin: 24px auto 40px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1d4ed8;
+    }
+
+    .userbox {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 12px 16px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 18px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      padding: 20px;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .pill {
+      background: #e0ecff;
+      color: #1e3a8a;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .title {
+      margin: 0 0 10px;
+      font-size: 22px;
+      line-height: 1.8;
+    }
+
+    .question-box {
+      margin-top: 12px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #eff6ff, #ffffff);
+      border: 1px solid #dbeafe;
+    }
+
+    .question-text {
+      margin: 0 0 16px;
+      font-size: 20px;
+      line-height: 2;
+      font-weight: 700;
+    }
+
+    .options {
+      display: grid;
+      gap: 12px;
+    }
+
+    .option-btn {
+      width: 100%;
+      border: none;
+      border-radius: 16px;
+      padding: 14px 16px;
+      text-align: right;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+      background: #f8fbff;
+      color: #0f172a;
+      border: 1px solid #cfe0ff;
+      transition: 0.2s ease;
+    }
+
+    .option-btn:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+    }
+
+    .option-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .waiting-note {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: #fff7ed;
+      color: #9a3412;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .side-title {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .score-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #f8fbff;
+      border: 1px solid #dbeafe;
+    }
+
+    .score-item.me {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+    }
+
+    .rank-badge {
+      min-width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #1d4ed8;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .score-name {
+      flex: 1;
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    .score-points {
+      font-weight: 800;
+      color: #0f766e;
+      white-space: nowrap;
+    }
+
+    .rules-box {
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      line-height: 2;
+      font-size: 14px;
+    }
+
+    .footer-actions {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .link-btn {
+      display: inline-block;
+      text-decoration: none;
+      background: #1d4ed8;
+      color: #ffffff;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .muted {
+      color: #475569;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    @media (max-width: 780px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .title {
+        font-size: 19px;
+      }
+
+      .question-text {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">علمینو</div>
+      <div class="userbox">
+        کاربر: <strong>{{ username }}</strong>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="status-row">
+          <div class="pill">ورودی: {{ active_game.entry_fee }} تومان</div>
+          <div class="pill">امتیاز برد: {{ win_score }}</div>
+          <div class="pill">پاسخ درست: +{{ correct_score }}</div>
+          <div class="pill">پاسخ غلط: {{ wrong_score }}</div>
+        </div>
+
+        <h2 class="title">مسابقه شروع شده و تا رسیدن یکی از بازیکنان به {{ win_score }} امتیاز ادامه دارد.</h2>
+
+        {% if question %}
+        <div class="question-box">
+          <p class="question-text">{{ question.question }}</p>
+
+          {% if already_answered %}
+            <div class="waiting-note">
+              پاسخ این سوال برای شما ثبت شده است. منتظر بمانید تا سایر بازیکنان هم پاسخ بدهند و سوال بعدی بارگذاری شود.
+            </div>
+          {% else %}
+            <form action="/game/answer" method="post" class="options">
+              {% for option in question.options %}
+              <button class="option-btn" type="submit" name="answer_index" value="{{ loop.index0 }}">
+                {{ loop.index }} ) {{ option }}
+              </button>
+              {% endfor %}
+            </form>
+          {% endif %}
+        </div>
+        {% else %}
+        <div class="waiting-note">
+          هنوز سوالی برای نمایش آماده نیست. صفحه تا چند ثانیه دیگر خودکار تازه می‌شود.
+        </div>
+        {% endif %}
+
+        <div class="rules-box">
+          <strong>قوانین امتیازدهی:</strong><br>
+          هر پاسخ درست 100 امتیاز اضافه می‌کند.<br>
+          هر پاسخ غلط 50 امتیاز از امتیاز بازیکن کم می‌کند.<br>
+          به محض رسیدن یک بازیکن به {{ win_score }} امتیاز، بازی پایان می‌یابد و برنده اعلام می‌شود.
+        </div>
+
+        <div class="footer-actions">
+          <a class="link-btn" href="/results">مشاهده نتایج آخرین بازی</a>
+          <a class="link-btn" href="/home">بازگشت به خانه</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="side-title">جدول امتیازات</h3>
+
+        <div class="score-list">
+          {% for row in scoreboard %}
+          <div class="score-item {% if row.username == username %}me{% endif %}">
+            <div class="rank-badge">{{ loop.index }}</div>
+            <div class="score-name">{{ row.username }}</div>
+            <div class="score-points">{{ row.score }} امتیاز</div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="rules-box" style="margin-top: 16px;">
+          <strong>وضعیت بازی:</strong><br>
+          تعداد بازیکنان: {{ active_game.players|length }} نفر<br>
+          تعداد سوالات استفاده‌شده: {{ active_game.used_question_ids|length }}<br>
+          صفحه هر 12 ثانیه یک‌بار خودکار تازه می‌شود تا سوال جدید و امتیازات جدید نمایش داده شود.
+        </div>
+
+        <p class="muted">
+          اگر پاسخ شما ثبت شده باشد، کافی است چند ثانیه صبر کنید تا با پاسخ بازیکنان دیگر، سوال بعدی بارگذاری شود.
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

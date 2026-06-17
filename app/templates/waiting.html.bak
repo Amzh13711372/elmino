@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Waiting Room{% endblock %}
+
+{% block content %}
+<style>
+.waiting-card{
+  background:#fff;
+  border-radius:24px;
+  padding:20px 16px;
+  box-shadow:0 10px 30px rgba(0,0,0,.06);
+}
+
+.waiting-title{
+  margin:0 0 12px 0;
+  font-size:30px;
+  font-weight:800;
+  text-align:left;
+}
+
+.waiting-count{
+  margin:0 0 20px 0;
+  font-size:18px;
+  color:#333;
+  text-align:left;
+}
+
+.players-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(110px, 1fr));
+  gap:16px;
+  margin-top:10px;
+}
+
+.player-box{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  background:#f8faff;
+  border-radius:18px;
+  padding:14px 10px;
+  min-height:140px;
+  overflow:hidden;
+}
+
+.player-avatar{
+  width:72px !important;
+  height:72px !important;
+  min-width:72px !important;
+  min-height:72px !important;
+  max-width:72px !important;
+  max-height:72px !important;
+  border-radius:50% !important;
+  object-fit:cover !important;
+  display:block;
+  margin:0 auto 10px auto;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+
+.player-name{
+  margin:0;
+  font-size:15px;
+  font-weight:700;
+  color:#222;
+  word-break:break-word;
+}
+
+.waiting-note{
+  margin-top:18px;
+  font-size:14px;
+  color:#666;
+  text-align:center;
+  line-height:1.9;
+}
+
+@media (max-width: 480px){
+  .waiting-title{
+    font-size:24px;
+  }
+
+  .waiting-count{
+    font-size:16px;
+  }
+
+  .players-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:12px;
+  }
+
+  .player-box{
+    padding:12px 8px;
+    min-height:125px;
+  }
+
+  .player-avatar{
+    width:64px !important;
+    height:64px !important;
+    min-width:64px !important;
+    min-height:64px !important;
+    max-width:64px !important;
+    max-height:64px !important;
+  }
+
+  .player-name{
+    font-size:14px;
+  }
+}
+</style>
+
+<section class="waiting-card">
+  <h2 class="waiting-title">Waiting Room</h2>
+  <p class="waiting-count">Players: {{ count }} / {{ required_players }}</p>
+
+  <div class="players-grid">
+    {% for p in players %}
+    <div class="player-box">
+      <img src="{{ p.avatar }}" class="player-avatar" alt="{{ p.name }}">
+      <p class="player-name">{{ p.name }}</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <p class="waiting-note">
+    This page refreshes automatically when new players join.
+  </p>
+</section>
+
+{% if auto_refresh %}
+<script>
+setInterval(async () => {
+  try {
+    const res = await fetch('/waiting-status');
+    const data = await res.json();
+    if (data.redirect) {
+      window.location.href = data.redirect;
+    } else {
+      window.location.reload();
+    }
+  } catch (e) {}
+}, 4000);
+</script>
+{% endif %}
+{% endblock %}
