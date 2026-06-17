@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>معرفی علمینو</title>
+  <style>
+    :root{
+      --bg1:#081426;
+      --bg2:#0f2c2a;
+      --card:#ffffffee;
+      --text:#0b1730;
+      --muted:#6b7280;
+      --green1:#2dd36f;
+      --green2:#16a34a;
+      --line:#e7eaf0;
+      --shadow:0 20px 50px rgba(0,0,0,.18);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Tahoma, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(45,211,111,.18), transparent 25%),
+        linear-gradient(135deg,var(--bg2),var(--bg1) 60%, #111827);
+      min-height:100vh;
+      color:#fff;
+    }
+    .wrap{
+      max-width:520px;
+      margin:0 auto;
+      padding:24px 18px 36px;
+    }
+    .card{
+      background:var(--card);
+      color:var(--text);
+      border-radius:36px;
+      box-shadow:var(--shadow);
+      padding:28px 20px 24px;
+    }
+    .logo{
+      width:112px;
+      height:112px;
+      margin:8px auto 20px;
+      border-radius:30px;
+      background:linear-gradient(135deg,var(--green1),var(--green2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#fff;
+      font-size:60px;
+      font-weight:700;
+      box-shadow:0 16px 34px rgba(34,197,94,.35);
+    }
+    h1{
+      margin:0;
+      text-align:center;
+      font-size:34px;
+      color:#0a1a3a;
+    }
+    .sub{
+      text-align:center;
+      color:var(--muted);
+      line-height:2;
+      margin:16px 0 26px;
+      font-size:18px;
+    }
+    .info{
+      background:#fff;
+      border:1px solid #e7eaf0;
+      border-radius:24px;
+      padding:18px;
+      margin-bottom:16px;
+      line-height:2;
+      color:#374151;
+      font-size:16px;
+    }
+    .price{
+      font-size:30px;
+      text-align:center;
+      color:#0a1a3a;
+      font-weight:700;
+      margin:10px 0 18px;
+    }
+    .btn{
+      width:100%;
+      border:none;
+      border-radius:24px;
+      padding:18px 16px;
+      color:#fff;
+      font-size:24px;
+      font-weight:700;
+      cursor:pointer;
+      background:linear-gradient(135deg,var(--green1),var(--green2));
+      box-shadow:0 14px 30px rgba(34,197,94,.28);
+    }
+    .back{
+      display:block;
+      text-align:center;
+      text-decoration:none;
+      color:#0b1730;
+      background:#fff;
+      border:1px solid #e7eaf0;
+      border-radius:22px;
+      padding:16px 14px;
+      font-size:18px;
+      font-weight:700;
+      margin-top:14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="logo">ع</div>
+      <h1>معرفی علمینو</h1>
+      <div class="sub">
+        خوش اومدی{% if user and user.username %} {{ user.username }}{% endif %}.<br>
+        بعد از پرداخت، اگر ۳ کاربر کامل شده باشند مستقیم وارد بازی می‌شوی، وگرنه وارد اتاق انتظار می‌شوی.
+      </div>
+
+      <div class="info">
+        <strong>قوانین کوتاه:</strong><br>
+        - ورود به مسابقه با پرداخت انجام می‌شود.<br>
+        - تا کامل شدن ۳ شرکت‌کننده، بازیکن‌ها در اتاق انتظار می‌مانند.<br>
+        - به محض تکمیل ۳ نفر، بازی شروع می‌شود.
+      </div>
+
+      <div class="price">ورودی مسابقه: ۱۰٬۰۰۰ تومان</div>
+
+      <form method="post" action="/pay">
+        <button class="btn" type="submit">پرداخت و ورود</button>
+      </form>
+
+      <a class="back" href="/login">بازگشت به ورود</a>
+    </div>
+  </div>
+</body>
+</html>

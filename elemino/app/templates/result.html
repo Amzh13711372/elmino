@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}نتیجه{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>نتیجه نهایی</h2>
+
+  {% if board %}
+    <ol class="result-list">
+      {% for item in board %}
+        <li>
+          <img src="{{ item.avatar }}" class="mini-avatar" alt="">
+          <span>{{ item.name }}</span>
+          <strong>{{ item.score }}</strong>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <p>هنوز نتیجه‌ای ثبت نشده است.</p>
+  {% endif %}
+
+  <div class="actions">
+    <a class="btn" href="/play-again">ورود دوباره به بازی</a>
+    <a class="btn secondary" href="/home">بازگشت به خانه</a>
+    {% if is_admin %}
+      <a class="btn danger" href="/reset-game">ریست بازی</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

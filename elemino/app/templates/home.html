@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}خانه{% endblock %}
+{% block content %}
+<section class="card">
+    <span class="badge">پنل کاربر</span>
+    <h2>سلام {{ username }}</h2>
+    <p>به علمینو خوش آمدید.</p>
+
+    <div class="row">
+        <div class="col card">
+            <h3>کیف پول</h3>
+            <p><strong>{{ user.wallet_balance }}</strong> تومان</p>
+        </div>
+        <div class="col card">
+            <h3>امانت فعال</h3>
+            <p><strong>{{ user.current_escrow }}</strong> تومان</p>
+        </div>
+        <div class="col card">
+            <h3>سود/زیان</h3>
+            <p><strong>{{ user.profit_balance }}</strong> تومان</p>
+        </div>
+    </div>
+
+    <div class="nav" style="margin-top:18px;">
+        <a class="btn" href="/wallet">کیف پول</a>
+        <a class="ghost" href="/payment">ورود به مسابقه</a>
+        <a class="ghost" href="/waiting">اتاق انتظار</a>
+        <a class="ghost" href="/results">نتایج</a>
+        <a class="ghost" href="/logout">خروج</a>
+    </div>
+
+    {% if can_cancel %}
+    <form action="/waiting/cancel" method="post" style="margin-top:18px;">
+        <button type="submit">لغو انتظار و برگشت مبلغ به کیف پول</button>
+    </form>
+    {% endif %}
+</section>
+{% endblock %}

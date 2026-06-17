@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}اتاق انتظار{% endblock %}
+{% block content %}
+<meta http-equiv="refresh" content="5">
+
+<section class="card">
+    <span class="badge">اتاق انتظار</span>
+    <h2>در انتظار تکمیل ظرفیت</h2>
+    <p>{{ state.message }}</p>
+
+    <div class="row">
+        <div class="col card">
+            <h3>بازیکنان آماده</h3>
+            <p><strong>{{ paid_count }}</strong> / <strong>{{ required_players }}</strong></p>
+        </div>
+        <div class="col card">
+            <h3>امانت شما</h3>
+            <p><strong>{{ user.current_escrow }}</strong> تومان</p>
+        </div>
+        <div class="col card">
+            <h3>مهلت لغو</h3>
+            <p><strong>{{ wait_timeout_minutes }}</strong> دقیقه</p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+        <h3>بازیکنان حاضر</h3>
+        {% if players %}
+            <ul>
+                {% for p in players %}
+                <li>{{ p.username }} - {{ p.current_escrow }} تومان</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">هنوز بازیکنی در صف نیست.</p>
+        {% endif %}
+    </div>
+
+    {% if paid_count >= required_players %}
+    <div class="success" style="margin-top:16px;">
+        ظرفیت تکمیل شد. در حال انتقال به مسابقه...
+    </div>
+    <script>
+        setTimeout(function(){ window.location.href = "/game"; }, 1500);
+    </script>
+    {% endif %}
+
+    {% if can_cancel %}
+    <form action="/waiting/cancel" method="post" style="margin-top:16px;">
+        <button type="submit">لغو انتظار و بازگشت مبلغ به کیف پول</button>
+    </form>
+    {% else %}
+    <p class="muted" style="margin-top:16px;">
+        اگر تا ۱۰ دقیقه ظرفیت تکمیل نشود، امکان لغو برای شما فعال می‌شود.
+    </p>
+    {% endif %}
+
+    <div class="nav" style="margin-top:18px;">
+        <a class="ghost" href="/home">خانه</a>
+        <a class="ghost" href="/wallet">کیف پول</a>
+        <a class="ghost" href="/payment">تغییر مبلغ ورودی</a>
+    </div>
+</section>
+{% endblock %}

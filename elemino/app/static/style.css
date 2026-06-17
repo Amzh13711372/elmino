@@ -1,0 +1,177 @@
+
+/* hide leaderboard section on home page */
+.home-leaderboard,
+#home-leaderboard,
+.leaderboard-home,
+section.leaderboard {
+    display: none !important;
+}
+
+/* =========================
+   Waiting room mobile fix
+   ========================= */
+
+.waiting-room,
+.waiting-container,
+.wait-room,
+.room-card {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 16px;
+}
+
+.waiting-room *,
+.waiting-container *,
+.wait-room *,
+.room-card * {
+    box-sizing: border-box;
+}
+
+.waiting-room img,
+.waiting-container img,
+.wait-room img,
+.room-card img,
+.player-avatar,
+.avatar,
+.user-avatar {
+    display: block;
+    width: 88px !important;
+    height: 88px !important;
+    max-width: 88px !important;
+    max-height: 88px !important;
+    object-fit: cover;
+    border-radius: 50%;
+    margin: 0 auto 10px auto;
+}
+
+.player-card,
+.waiting-player,
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 6px 24px rgba(0,0,0,.06);
+}
+
+.player-card img,
+.waiting-player img,
+.user-card img {
+    flex: 0 0 64px;
+    width: 64px !important;
+    height: 64px !important;
+    max-width: 64px !important;
+    max-height: 64px !important;
+    margin: 0 !important;
+}
+
+.player-info,
+.waiting-info,
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.player-name,
+.waiting-name,
+.user-name {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.player-score,
+.waiting-score,
+.user-score {
+    font-size: 14px;
+    opacity: .8;
+}
+
+@media (max-width: 768px) {
+    .waiting-room,
+    .waiting-container,
+    .wait-room,
+    .room-card {
+        padding: 12px !important;
+    }
+
+    .waiting-room h1,
+    .waiting-room h2,
+    .waiting-room h3,
+    .waiting-container h1,
+    .waiting-container h2,
+    .waiting-container h3,
+    .wait-room h1,
+    .wait-room h2,
+    .wait-room h3 {
+        font-size: 24px !important;
+        line-height: 1.4;
+        margin-bottom: 12px;
+    }
+
+    .player-card,
+    .waiting-player,
+    .user-card {
+        padding: 10px !important;
+        gap: 10px !important;
+        border-radius: 14px !important;
+    }
+
+    .player-card img,
+    .waiting-player img,
+    .user-card img,
+    .player-avatar,
+    .avatar,
+    .user-avatar {
+        width: 56px !important;
+        height: 56px !important;
+        max-width: 56px !important;
+        max-height: 56px !important;
+    }
+
+    .player-name,
+    .waiting-name,
+    .user-name {
+        font-size: 15px !important;
+    }
+
+    .player-score,
+    .waiting-score,
+    .user-score {
+        font-size: 13px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .waiting-room,
+    .waiting-container,
+    .wait-room,
+    .room-card {
+        padding: 10px !important;
+    }
+
+    .player-card,
+    .waiting-player,
+    .user-card {
+        align-items: center;
+    }
+
+    .player-card img,
+    .waiting-player img,
+    .user-card img,
+    .player-avatar,
+    .avatar,
+    .user-avatar {
+        width: 52px !important;
+        height: 52px !important;
+        max-width: 52px !important;
+        max-height: 52px !important;
+    }
+}

@@ -1,0 +1,11 @@
+{
+  "status": "waiting",
+  "message": "مسابقه با مبلغ ورودی 1000 تومان اجرا شد.",
+  "selected_entry_fee": 5000,
+  "admin_earnings": 300,
+  "current_game_id": 1,
+  "last_results": [],
+  "last_pool": 0,
+  "last_admin_share": 0,
+  "last_game_at": "2026-06-17T03:53:16.449254"
+}

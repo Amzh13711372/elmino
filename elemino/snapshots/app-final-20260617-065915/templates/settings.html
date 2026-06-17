@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}تنظیمات{% endblock %}
+{% block content %}
+<div class="grid">
+    <section class="card two-col">
+        <span class="badge">تنظیمات سامانه</span>
+        <h2>اطلاعات مسابقه</h2>
+        <p>نام کاربری: <strong>{{ username }}</strong></p>
+        <p>ورودی فعلی: <strong>{{ entry_fee }}</strong> تومان</p>
+        <p>حداقل بازیکن برای شروع: <strong>{{ required_players }}</strong></p>
+        <p>حداکثر سوال هر نفر: <strong>{{ max_questions_per_player }}</strong></p>
+        <p>وضعیت فعلی مسابقه: <strong>{{ state.status }}</strong></p>
+        <p>پیام سیستم: <span class="muted">{{ state.message }}</span></p>
+        <p>درآمد مدیر تا این لحظه: <strong>{{ state.admin_earnings }}</strong> تومان</p>
+    </section>
+
+    <section class="card two-col">
+        <h3>وضعیت حساب شما</h3>
+        <p>نام کاربری: <strong>{{ username }}</strong></p>
+        <p>پرداخت فعلی: <strong>{% if user and user.paid %}انجام شده{% else %}انجام نشده{% endif %}</strong></p>
+        <p>اصل امانت‌های ثبت‌شده: <strong>{{ user.deposit_balance }}</strong> تومان</p>
+        <p>سود خالص: <strong>{{ user.profit_balance }}</strong> تومان</p>
+        <p>سود برداشت‌شده: <strong>{{ user.withdrawn_profit }}</strong> تومان</p>
+    </section>
+
+    <section class="card">
+        <h3>درخواست‌های برداشت</h3>
+        {% if withdrawals %}
+            <ul class="list">
+                {% for item in withdrawals %}
+                    <li>
+                        {{ item.username }} - {{ item.amount }} تومان - {{ item.status }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">هنوز درخواست برداشتی ثبت نشده است.</p>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <h3>اقدامات مدیریتی</h3>
+        <div class="nav">
+            <a href="/home">بازگشت به خانه</a>
+            <a class="ghost" href="/payment">صفحه پرداخت</a>
+            <a class="ghost" href="/waiting">اتاق انتظار</a>
+            <a class="ghost" href="/results">نتایج</a>
+        </div>
+
+        <div style="margin-top: 18px;">
+            <form action="/reset-state" method="post">
+                <button type="submit" class="btn danger">بازنشانی کامل وضعیت بازی</button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}

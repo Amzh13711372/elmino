@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>پرداخت ورود به مسابقه</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{font-family:sans-serif;background:#111827;color:#fff;margin:0;padding:20px}
+    .box{max-width:700px;margin:auto;background:#1f2937;border-radius:20px;padding:24px}
+    .card{background:#374151;border-radius:16px;padding:16px;margin:12px 0}
+    .btn{background:#2563eb;color:#fff;border:none;padding:12px 18px;border-radius:12px;font-size:16px;cursor:pointer}
+    .warn{background:#7c2d12;padding:12px;border-radius:12px;margin-bottom:14px}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>پرداخت ورودی مسابقه</h1>
+
+    {% if request.query_params.get('error') %}
+      <div class="warn">خطا در پرداخت یا تایید پرداخت. دوباره تلاش کنید.</div>
+    {% endif %}
+
+    <div class="card">
+      <p>مبلغ ورود این مسابقه: <b>{{ entry_fee }}</b> تومان</p>
+      <p>استخر فعلی مسابقه: <b>{{ current_pool }}</b> تومان</p>
+      <p>استخر بعد از پرداخت شما: <b>{{ next_pool }}</b> تومان</p>
+    </div>
+
+    <div class="card">
+      <p>در این نسخه، پرداخت به‌صورت آزمایشی شبیه‌سازی شده است.</p>
+      <form method="post" action="/payment/mock-pay">
+        <button class="btn" type="submit">پرداخت آزمایشی و ورود به صف</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

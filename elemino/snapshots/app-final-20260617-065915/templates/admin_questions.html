@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="background:#fff;padding:20px;border-radius:16px;max-width:700px;margin:auto;">
+    <h2>مدیریت سوالات</h2>
+
+    <form action="/admin/questions/add" method="post" style="display:flex;flex-direction:column;gap:10px;">
+        <input type="text" name="question" placeholder="متن سوال" required>
+        <input type="text" name="opt1" placeholder="گزینه ۱" required>
+        <input type="text" name="opt2" placeholder="گزینه ۲" required>
+        <input type="text" name="opt3" placeholder="گزینه ۳" required>
+        <input type="text" name="opt4" placeholder="گزینه ۴" required>
+        <input type="number" name="correct" min="0" max="3" value="0" required>
+        <button type="submit">افزودن سوال</button>
+    </form>
+
+    <hr style="margin:20px 0;">
+
+    <h3>لیست سوالات</h3>
+    {% for q in questions %}
+        <div style="padding:10px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;">
+            <b>{{ q.question }}</b>
+            <ul>
+                {% for op in q.options %}
+                    <li {% if loop.index0 == q.correct_index %}style="color:green;font-weight:bold;"{% endif %}>
+                        {{ op }}
+                    </li>
+                {% endfor %}
+            </ul>
+            <small>دسته: {{ q.category }}</small>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

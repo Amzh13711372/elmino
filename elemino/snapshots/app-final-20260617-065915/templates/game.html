@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}مسابقه{% endblock %}
+{% block content %}
+<section class="card">
+    <span class="badge">مرحله مسابقه</span>
+    <h2>مسابقه آماده شروع است</h2>
+
+    <div class="row">
+        <div class="col card">
+            <h3>کاربر فعلی</h3>
+            <p>{{ username }}</p>
+        </div>
+        <div class="col card">
+            <h3>بازیکنان</h3>
+            <p>{{ paid_count }} / {{ required_players }}</p>
+        </div>
+        <div class="col card">
+            <h3>امانت شما</h3>
+            <p>{{ user.current_escrow }} تومان</p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+        <h3>شرکت‌کنندگان</h3>
+        <ul>
+            {% for p in players %}
+            <li>{{ p.username }} - {{ p.current_escrow }} تومان</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    {% if not same_fee %}
+    <div class="error" style="margin-top:16px;">
+        مبالغ ورودی بازیکنان یکسان نیست. این دور نباید اجرا شود.
+    </div>
+    {% else %}
+    <div class="card center" style="margin-top:18px;">
+        <p>شروع بازی تا:</p>
+        <div class="countdown" id="countdown">5</div>
+        <p class="muted">پس از اتمام شمارش، دکمه فعال می‌شود.</p>
+    </div>
+
+    <form action="/game/start" method="post" style="margin-top:16px;">
+        <button id="startBtn" type="submit" disabled>شروع و ثبت نتیجه</button>
+    </form>
+
+    <script>
+    let c = 5;
+    const el = document.getElementById("countdown");
+    const btn = document.getElementById("startBtn");
+    const t = setInterval(function(){
+        c--;
+        el.textContent = c;
+        if(c <= 0){
+            clearInterval(t);
+            el.textContent = "شروع";
+            btn.disabled = false;
+        }
+    }, 1000);
+    </script>
+    {% endif %}
+
+    <div class="nav" style="margin-top:18px;">
+        <a class="ghost" href="/waiting">بازگشت به انتظار</a>
+        <a class="ghost" href="/home">خانه</a>
+    </div>
+</section>
+{% endblock %}

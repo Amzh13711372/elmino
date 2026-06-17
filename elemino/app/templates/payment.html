@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}پرداخت و ورود{% endblock %}
+{% block content %}
+<section class="card">
+    <span class="badge">ورود به مسابقه</span>
+    <h2>انتخاب مبلغ ورودی</h2>
+
+    <p>موجودی فعلی کیف پول شما: <strong>{{ user.wallet_balance }}</strong> تومان</p>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if user.current_escrow > 0 %}
+    <div class="success">
+        شما هم‌اکنون یک امانت فعال به مبلغ {{ user.current_escrow }} تومان دارید.
+    </div>
+    {% endif %}
+
+    <form action="/payment" method="post">
+        <div class="field">
+            <label>مبلغ ورودی</label>
+            <select name="entry_fee" required>
+                {% for fee in allowed_entry_fees %}
+                <option value="{{ fee }}">{{ fee }} تومان</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit">تأیید و ورود به انتظار</button>
+    </form>
+
+    <div class="nav" style="margin-top:18px;">
+        <a class="ghost" href="/wallet">شارژ کیف پول</a>
+        <a class="ghost" href="/home">خانه</a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,261 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: linear-gradient(180deg, #eef4ff, #f8fbff);
+  color: #1f2937;
+}
+
+.topbar {
+  background: #243f8f;
+  color: #fff;
+  padding: 18px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+}
+
+.topbar a {
+  color: #fff;
+  text-decoration: none;
+  margin-left: 14px;
+  font-size: 18px;
+}
+
+.brand a {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.container {
+  max-width: 960px;
+  margin: 22px auto;
+  padding: 0 14px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(36, 63, 143, 0.10);
+}
+
+.form-card {
+  max-width: 650px;
+  margin: 30px auto;
+}
+
+h1, h2, h3 {
+  margin-top: 0;
+}
+
+label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 17px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="file"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid #d6dfeb;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 17px;
+}
+
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap input {
+  padding-left: 54px;
+}
+
+.eye-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.btn {
+  display: inline-block;
+  background: #3167e3;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  border-radius: 16px;
+  padding: 13px 18px;
+  cursor: pointer;
+  margin-top: 16px;
+  font-size: 17px;
+}
+
+.btn.secondary {
+  background: #64748b;
+}
+
+.btn.danger {
+  background: #dc2626;
+}
+
+.small-btn {
+  padding: 8px 12px;
+  font-size: 14px;
+  margin-top: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.msg {
+  padding: 12px 14px;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+
+.msg.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.msg.success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.user-box,
+.turn-box {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.mini-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.leaderboard,
+.result-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.leaderboard li,
+.result-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8edf5;
+  flex-wrap: wrap;
+}
+
+.players {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.player {
+  background: #f8fbff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px;
+  text-align: center;
+  min-width: 110px;
+}
+
+.question-box {
+  margin-top: 18px;
+}
+
+.option-btn,
+.option-static {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: right;
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 16px;
+}
+
+.option-btn {
+  border: none;
+  background: #e0ecff;
+  cursor: pointer;
+}
+
+.option-btn:hover {
+  background: #cfe0ff;
+}
+
+.option-static {
+  background: #f1f5f9;
+}
+
+.links {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.muted {
+  color: #64748b;
+}
+
+.splash-body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+  color: white;
+}
+
+.splash-box {
+  text-align: center;
+  background: rgba(255,255,255,0.12);
+  padding: 34px;
+  border-radius: 24px;
+  backdrop-filter: blur(8px);
+}

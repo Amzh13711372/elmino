@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}کیف پول{% endblock %}
+{% block content %}
+<section class="card">
+    <span class="badge">کیف پول داخلی</span>
+    <h2>کیف پول {{ username }}</h2>
+
+    <div class="row">
+        <div class="col card">
+            <h3>موجودی کیف پول</h3>
+            <p><strong>{{ user.wallet_balance }}</strong> تومان</p>
+        </div>
+        <div class="col card">
+            <h3>امانت فعال</h3>
+            <p><strong>{{ user.current_escrow }}</strong> تومان</p>
+        </div>
+        <div class="col card">
+            <h3>سود/زیان خالص</h3>
+            <p><strong>{{ user.profit_balance }}</strong> تومان</p>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+        <h3>شارژ آزمایشی کیف پول</h3>
+        <form action="/wallet/charge" method="post">
+            <div class="field">
+                <label>مبلغ</label>
+                <input type="number" name="amount" min="1000" step="1000" required>
+            </div>
+            <button type="submit">شارژ کیف پول</button>
+        </form>
+    </div>
+
+    <div class="card" style="margin-top:18px;">
+        <h3>آخرین نتایج شما</h3>
+        {% if my_results %}
+            <ul>
+            {% for r in my_results %}
+                <li>
+                    رتبه {{ r.rank }} | ورودی {{ r.entry_fee }} |
+                    جایزه {{ r.reward }} | صندوق {{ r.pool }}
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="muted">هنوز نتیجه‌ای ثبت نشده است.</p>
+        {% endif %}
+    </div>
+
+    <div class="nav" style="margin-top:18px;">
+        <a class="ghost" href="/home">خانه</a>
+        <a class="ghost" href="/payment">مسابقه</a>
+    </div>
+</section>
+{% endblock %}

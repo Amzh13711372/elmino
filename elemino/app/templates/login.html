@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}ورود{% endblock %}
+{% block content %}
+<div class="hero">
+    <section class="card" style="width:100%;">
+        <div class="center">
+            <div class="logo">ع</div>
+            <span class="badge">ورود به حساب کاربری</span>
+            <h2>علمینو</h2>
+        </div>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form action="/login" method="post">
+            <div class="field">
+                <label>نام کاربری</label>
+                <input type="text" name="username" placeholder="نام کاربری" required>
+            </div>
+
+            <div class="field">
+                <label>رمز عبور</label>
+                <div class="password-wrap">
+                    <input id="password" type="password" name="password" placeholder="رمز عبور" required>
+                    <button class="toggle-eye" type="button" onclick="togglePassword()">نمایش</button>
+                </div>
+            </div>
+
+            <button type="submit" style="width:100%;">تأیید</button>
+        </form>
+
+        <div class="tiny-links">
+            <a class="ghost" href="/register">ثبت نام</a>
+            <a class="ghost" href="/forgot-password">فراموشی رمز</a>
+        </div>
+    </section>
+</div>
+
+<script>
+function togglePassword() {
+    const input = document.getElementById("password");
+    input.type = input.type === "password" ? "text" : "password";
+}
+</script>
+{% endblock %}

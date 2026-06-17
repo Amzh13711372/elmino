@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="background:#fff;padding:20px;border-radius:16px;">
+  <h2>نفرات برتر بازی</h2>
+  {% for item in leaderboard %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #eee;">
+      <span>{{ loop.index }}. {{ item.name }}</span>
+      <strong>{{ item.wallet }} سکه</strong>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

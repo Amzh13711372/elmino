@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اتاق انتظار | علمینو</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Tahoma, Arial, sans-serif;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe, #f8fafc);
+      color: #0f172a;
+    }
+
+    .container {
+      width: min(900px, 92%);
+      margin: 24px auto 40px;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.96);
+      border-radius: 24px;
+      box-shadow: 0 18px 45px rgba(15,23,42,0.08);
+      padding: 22px;
+      margin-bottom: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      font-size: 24px;
+      font-weight: 800;
+      color: #1d4ed8;
+    }
+
+    .userbox {
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 12px 6px 4px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      color: #0f172a;
+    }
+
+    .hero p {
+      margin: 0;
+      color: #475569;
+      line-height: 2;
+      font-size: 15px;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .stat {
+      background: #f8fbff;
+      border: 1px solid #dbeafe;
+      border-radius: 18px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .stat .num {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1d4ed8;
+      margin-bottom: 8px;
+    }
+
+    .stat .label {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.8;
+    }
+
+    .players {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .player {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .player.me {
+      background: #e0f2fe;
+      border-color: #7dd3fc;
+    }
+
+    .player-name {
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .player-status {
+      font-size: 13px;
+      color: #0f766e;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .waiting-box {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: white;
+      text-align: center;
+    }
+
+    .waiting-box h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .waiting-box p {
+      margin: 0;
+      line-height: 2;
+      font-size: 14px;
+      color: rgba(255,255,255,0.92);
+    }
+
+    .dots {
+      display: inline-block;
+      min-width: 32px;
+      text-align: right;
+    }
+
+    .rules {
+      line-height: 2;
+      font-size: 14px;
+      color: #334155;
+    }
+
+    .alert {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      line-height: 2;
+      font-size: 14px;
+    }
+
+    .success {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #ecfdf5;
+      border: 1px solid #86efac;
+      color: #166534;
+      line-height: 2;
+      font-size: 14px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .btn-primary {
+      background: #1d4ed8;
+      color: #fff;
+    }
+
+    .btn-light {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .btn-danger {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .tiny {
+      margin-top: 12px;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.9;
+    }
+
+    @media (max-width: 760px) {
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 23px;
+      }
+
+      .player {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @keyframes blinkDots {
+      0% { opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+
+    .dots span {
+      animation: blinkDots 1.2s infinite;
+      display: inline-block;
+    }
+
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="topbar">
+        <div class="brand">علمینو</div>
+        <div class="userbox">کاربر: <strong>{{ username }}</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hero">
+        <h1>اتاق انتظار مسابقه</h1>
+        <p>
+          شما با موفقیت وارد صف بازی شده‌اید. به محض تکمیل شدن 3 بازیکن،
+          مسابقه به صورت خودکار شروع می‌شود.
+        </p>
+      </div>
+
+      <div class="status-grid">
+        <div class="stat">
+          <div class="num">{{ current_players }}</div>
+          <div class="label">تعداد بازیکنان حاضر</div>
+        </div>
+        <div class="stat">
+          <div class="num">{{ required_players }}</div>
+          <div class="label">تعداد بازیکنان لازم برای شروع</div>
+        </div>
+        <div class="stat">
+          <div class="num">{{ entry_fee }}</div>
+          <div class="label">ورودی مسابقه (تومان)</div>
+        </div>
+      </div>
+
+      <div class="players">
+        {% for player in players %}
+        <div class="player {% if player.username == username %}me{% endif %}">
+          <div class="player-name">
+            {{ loop.index }}. {{ player.username }}
+            {% if player.username == username %}(شما){% endif %}
+          </div>
+          <div class="player-status">آماده برای شروع</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% if game_ready %}
+      <div class="success">
+        اتاق کامل شده است و بازی آماده شروع می‌باشد. اگر انتقال خودکار انجام نشد،
+        روی دکمه ورود به بازی بزنید.
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-primary" href="/game">ورود به بازی</a>
+        <a class="btn btn-light" href="/home">بازگشت به خانه</a>
+      </div>
+      {% else %}
+      <div class="waiting-box">
+        <h2>
+          در انتظار ورود بازیکنان
+          <span class="dots"><span>.</span><span>.</span><span>.</span></span>
+        </h2>
+        <p>
+          این صفحه هر 8 ثانیه یک‌بار خودکار تازه می‌شود.
+          بعد از کامل شدن 3 نفر، بازی شروع می‌شود.
+        </p>
+      </div>
+
+      <div class="alert">
+        اگر اتاق تا 10 دقیقه کامل نشود، باید امکان لغو حضور و بازگشت وجه برای شما فعال باشد.
+        اگر این منطق را در بک‌اند پیاده کرده‌ای، از همان مسیر لغو استفاده می‌شود.
+      </div>
+
+      <div class="actions">
+        <a class="btn btn-light" href="/home">بازگشت به خانه</a>
+
+        {% if can_cancel %}
+        <form action="/cancel-matchmaking" method="post" style="margin:0;">
+          <button class="btn btn-danger" type="submit">لغو حضور و بازگشت وجه</button>
+        </form>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="tiny">
+        نکته: اگر بعد از کامل شدن اتاق، همچنان در همین صفحه ماندی، یک بار دستی رفرش کن
+        یا روی «ورود به بازی» بزن.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="rules">
+        <strong>قوانین مسابقه:</strong><br>
+        - مسابقه بین 3 بازیکن انجام می‌شود.<br>
+        - هر پاسخ صحیح: 100+ امتیاز<br>
+        - هر پاسخ غلط: 50- امتیاز<br>
+        - اولین بازیکنی که به 550 امتیاز برسد، برنده مسابقه خواهد شد.
+      </div>
+    </div>
+  </div>
+
+  {% if game_ready %}
+  <script>
+    setTimeout(function () {
+      window.location.href = "/game";
+    }, 2500);
+  </script>
+  {% endif %}
+</body>
+</html>

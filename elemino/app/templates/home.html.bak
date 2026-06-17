@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Home | Elemino{% endblock %}
+
+{% block content %}
+<div class="simple-card">
+  <h1 style="margin-bottom:24px;">Welcome to Elemino</h1>
+
+  {% if user %}
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;">
+    <img
+      src="{{ user.avatar }}"
+      alt="avatar"
+      style="width:88px;height:88px;border-radius:50%;object-fit:cover;flex:0 0 88px;"
+    >
+
+    <div style="flex:1;min-width:220px;">
+      <p><strong>{{ user.name }}</strong></p>
+      <p>Username: {{ user.username }}</p>
+      <p>Wallet: {{ user.wallet }}</p>
+      <p>Theme: {{ settings.theme }}</p>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:24px;">
+    <a href="/waiting" class="btn">Join Game</a>
+    <a href="/settings" class="btn gray">Settings</a>
+    {% if is_admin %}
+    <a href="/admin" class="btn dark">Admin Panel</a>
+    {% endif %}
+  </div>
+  {% else %}
+  <div style="display:flex;gap:16px;flex-wrap:wrap;">
+    <a href="/login" class="btn">Login</a>
+    <a href="/register" class="btn gray">Register</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="simple-card">
+  <h2>Game Status</h2>
+  <p>Current status: {{ status }}</p>
+  <p>Required players: {{ required_players }}</p>
+  <p>Time per question: 10 seconds</p>
+</div>
+{% endblock %}

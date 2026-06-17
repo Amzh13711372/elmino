@@ -1,0 +1,10 @@
+{
+  "status": "waiting",
+  "message": "در انتظار تکمیل بازیکنان",
+  "selected_entry_fee": 5000,
+  "admin_earnings": 0,
+  "current_game_id": 1,
+  "last_results": [],
+  "last_pool": 0,
+  "last_admin_share": 0
+}

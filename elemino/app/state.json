@@ -1,0 +1,9 @@
+{
+  "waiting_room": {
+    "players": [],
+    "entry_fee": 10000,
+    "created_at": null
+  },
+  "active_game": null,
+  "last_result": null
+}

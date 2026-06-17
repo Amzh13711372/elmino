@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}نتایج{% endblock %}
+{% block content %}
+<section class="card">
+    <span class="badge">نتایج مسابقه</span>
+    <h2>آخرین نتیجه ثبت‌شده</h2>
+
+    {% if latest_result %}
+        <div class="card">
+            <p><strong>زمان اجرا:</strong> {{ latest_result.played_at }}</p>
+            <p><strong>مبلغ ورودی:</strong> {{ latest_result.entry_fee }} تومان</p>
+            <p><strong>صندوق کل:</strong> {{ latest_result.pool }} تومان</p>
+            <p><strong>سهم مدیریت:</strong> {{ latest_result.admin_reward }} تومان</p>
+        </div>
+
+        <div class="card" style="margin-top:18px;">
+            <h3>رتبه‌بندی</h3>
+            <ul>
+                {% for p in latest_result.players %}
+                <li>
+                    رتبه {{ p.rank }} - {{ p.username }} - جایزه {{ p.reward }} تومان
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if my_result %}
+        <div class="success" style="margin-top:18px;">
+            نتیجه شما: رتبه {{ my_result.rank }} با جایزه {{ my_result.reward }} تومان
+        </div>
+        {% else %}
+        <div class="muted" style="margin-top:18px;">
+            شما در آخرین مسابقه ثبت‌شده حضور نداشتید.
+        </div>
+        {% endif %}
+    {% else %}
+        <p class="muted">هنوز نتیجه‌ای ثبت نشده است.</p>
+    {% endif %}
+
+    <div class="nav" style="margin-top:18px;">
+        <a class="ghost" href="/home">خانه</a>
+        <a class="ghost" href="/wallet">کیف پول</a>
+        <a class="ghost" href="/payment">مسابقه جدید</a>
+    </div>
+</section>
+{% endblock %}

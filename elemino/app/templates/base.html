@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}علمینو{% endblock %}</title>
+    <style>
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family:Tahoma, sans-serif;
+            background:#f6fbfc;
+            color:#123;
+        }
+        .container{
+            max-width:720px;
+            margin:0 auto;
+            padding:18px;
+        }
+        .card{
+            background:#fff;
+            border:1px solid #d8eef0;
+            border-radius:20px;
+            padding:18px;
+            box-shadow:0 8px 24px rgba(0,0,0,.05);
+        }
+        .hero{
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        }
+        .badge{
+            display:inline-block;
+            background:#dff7f8;
+            color:#067f8b;
+            padding:8px 14px;
+            border-radius:999px;
+            font-size:14px;
+            margin-bottom:12px;
+        }
+        h1,h2,h3{margin-top:0}
+        .btn, button{
+            background:#0f99a8;
+            color:#fff;
+            border:none;
+            border-radius:14px;
+            padding:14px 18px;
+            font-size:16px;
+            cursor:pointer;
+            text-decoration:none;
+            display:inline-block;
+        }
+        .btn:disabled, button:disabled{
+            opacity:.6;
+            cursor:not-allowed;
+        }
+        .ghost{
+            background:transparent;
+            color:#0f99a8;
+            border:1px solid #0f99a8;
+            border-radius:14px;
+            padding:12px 16px;
+            text-decoration:none;
+            display:inline-block;
+        }
+        .nav{
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+        }
+        .field{
+            margin-bottom:14px;
+        }
+        .field label{
+            display:block;
+            margin-bottom:8px;
+            font-weight:bold;
+        }
+        .field input, .field select{
+            width:100%;
+            padding:14px;
+            border:1px solid #cfe4e7;
+            border-radius:14px;
+            font-size:16px;
+            background:#fff;
+        }
+        .muted{color:#678}
+        .error{
+            background:#ffe5e5;
+            color:#a11;
+            padding:12px;
+            border-radius:12px;
+            margin-bottom:14px;
+        }
+        .success{
+            background:#e6ffed;
+            color:#0a7a35;
+            padding:12px;
+            border-radius:12px;
+            margin-bottom:14px;
+        }
+        .row{
+            display:flex;
+            gap:12px;
+            flex-wrap:wrap;
+        }
+        .col{
+            flex:1 1 220px;
+        }
+        .logo{
+            width:110px;
+            height:110px;
+            margin:0 auto 18px;
+            border-radius:30px;
+            background:linear-gradient(135deg,#dff7f8,#9be3ea);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:38px;
+            color:#087b88;
+            font-weight:bold;
+        }
+        .center{text-align:center}
+        .tiny-links{
+            display:flex;
+            justify-content:space-between;
+            margin-top:10px;
+        }
+        .password-wrap{
+            position:relative;
+        }
+        .toggle-eye{
+            position:absolute;
+            left:12px;
+            top:50%;
+            transform:translateY(-50%);
+            border:none;
+            background:none;
+            color:#0f99a8;
+            font-size:14px;
+            cursor:pointer;
+        }
+        .countdown{
+            font-size:46px;
+            font-weight:bold;
+            color:#0f99a8;
+            margin:10px 0;
+        }
+        ul.rules li{margin-bottom:10px}
+    </style>
+</head>
+<body>
+<div class="container">
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>

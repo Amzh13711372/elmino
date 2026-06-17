@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{% if lang == 'fa' %}معرفی علمینو{% else %}Elemino Intro{% endif %}{% endblock %}
+
+{% block content %}
+<style>
+.hero{
+  padding:26px 18px;
+  text-align:center;
+}
+.hero h1{
+  margin:0 0 14px;
+  font-size:34px;
+  line-height:1.5;
+}
+.hero p{
+  margin:0 auto 18px;
+  max-width:760px;
+  color:#5c667a;
+  font-size:17px;
+  line-height:2;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+  margin-top:20px;
+}
+.hero-box{
+  background:#f8faff;
+  border:1px solid #e7edf9;
+  border-radius:18px;
+  padding:18px 14px;
+}
+.hero-actions{
+  display:flex;
+  gap:14px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-top:24px;
+}
+.hero-btn{
+  min-width:160px;
+  padding:15px 20px;
+  border-radius:18px;
+  font-weight:700;
+  color:#fff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.hero-btn.primary{background:#4c6fff}
+.hero-btn.secondary{background:#8ea0c4}
+</style>
+
+<div class="simple-card hero">
+  <h1>{% if lang == 'fa' %}به علمینو خوش آمدید{% else %}Welcome to Elemino{% endif %}</h1>
+  <p>
+    {% if lang == 'fa' %}
+    علمینو یک بازی پرسش و پاسخ آنلاین و نوبتی است. بازیکن‌ها بعد از تکمیل ظرفیت وارد رقابت می‌شوند، امتیازها به‌صورت زنده به‌روزرسانی می‌شود و تجربه بازی برای موبایل بهینه شده است.
+    {% else %}
+    Elemino is an online turn-based quiz game. Players enter after room capacity is completed, scores update live, and the whole experience is optimized for mobile.
+    {% endif %}
+  </p>
+
+  <div class="hero-grid">
+    <div class="hero-box">
+      <strong>{% if lang == 'fa' %}شروع خودکار بازی{% else %}Auto Start{% endif %}</strong>
+      <div style="margin-top:8px;color:#5c667a;">
+        {% if lang == 'fa' %}بعد از کامل شدن ۳ نفر بازی فعال می‌شود.{% else %}Game starts after 3 players join.{% endif %}
+      </div>
+    </div>
+    <div class="hero-box">
+      <strong>{% if lang == 'fa' %}جدول زنده{% else %}Live Board{% endif %}</strong>
+      <div style="margin-top:8px;color:#5c667a;">
+        {% if lang == 'fa' %}فقط امتیاز بازیکنان فعلی بازی نمایش داده می‌شود.{% else %}Only current players' scores are shown.{% endif %}
+      </div>
+    </div>
+    <div class="hero-box">
+      <strong>{% if lang == 'fa' %}طراحی موبایلی{% else %}Mobile Friendly{% endif %}</strong>
+      <div style="margin-top:8px;color:#5c667a;">
+        {% if lang == 'fa' %}ظاهر صفحه‌ها برای نمایشگر گوشی استاندارد شده است.{% else %}Pages are optimized for phone screens.{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-actions">
+    {% if current_user %}
+      <a href="/home" class="hero-btn primary">{% if lang == 'fa' %}ورود به خانه{% else %}Enter Home{% endif %}</a>
+    {% else %}
+      <a href="/start" class="hero-btn primary">{% if lang == 'fa' %}شروع{% else %}Start{% endif %}</a>
+      <a href="/register" class="hero-btn secondary">{% if lang == 'fa' %}ثبت‌نام{% else %}Register{% endif %}</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

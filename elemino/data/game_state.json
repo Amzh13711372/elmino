@@ -1,0 +1,14 @@
+{
+  "status": "waiting",
+  "participants": [],
+  "players": 0,
+  "prize_pool": 0,
+  "current_turn": 0,
+  "current_player": null,
+  "current_question": null,
+  "asked_question_ids": [],
+  "player_levels": {},
+  "answers_count": {},
+  "results": [],
+  "message": "برای شروع، 3 نفر دیگر لازم است"
+}

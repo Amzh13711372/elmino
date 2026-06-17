@@ -1,0 +1,1268 @@
+from fastapi import FastAPI, Request, Form, UploadFile, File
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import hashlib, json, os, random, shutil, time, uuid
+
+app = FastAPI()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+UPLOAD_DIR = os.path.join(STATIC_DIR, "uploads")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+os.makedirs(STATIC_DIR, exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+USERS_FILE = os.path.join(ROOT_DIR, "users.json")
+QUESTIONS_FILE = os.path.join(ROOT_DIR, "questions.json")
+GAME_STATE_FILE = os.path.join(ROOT_DIR, "game_state.json")
+SETTINGS_FILE = os.path.join(ROOT_DIR, "settings.json")
+
+WIN_SCORE = 550
+CORRECT_SCORE = 100
+WRONG_PENALTY = 50
+TIMEOUT_PENALTY = 0
+TIMER_SECONDS = 10
+REQUIRED_PLAYERS = 3
+RANK_COINS = [100, 60, 30]
+
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "123456"
+
+AVATARS = [
+    "https://cdn-icons-png.flaticon.com/512/4140/4140037.png",
+    "https://cdn-icons-png.flaticon.com/512/4140/4140048.png",
+    "https://cdn-icons-png.flaticon.com/512/4140/4140051.png",
+    "https://cdn-icons-png.flaticon.com/512/4140/4140061.png",
+]
+DEFAULT_AVATAR = AVATARS[0]
+
+FALLBACK_QUESTIONS = [
+    {"question":"پایتخت کانادا کدام است؟","options":["تورنتو","ونکوور","اتاوا","مونترال"],"correct_index":2, "category":"عمومی"},
+    {"question":"بلندترین کوه جهان چیست؟","options":["دنا","اورست","آلپ","کلیمانجارو"],"correct_index":1, "category":"جغرافیا"},
+    {"question":"کدام سیاره به سیاره سرخ معروف است؟","options":["زهره","مشتری","مریخ","زحل"],"correct_index":2, "category":"نجوم"},
+    {"question":"بزرگ‌ترین اقیانوس جهان کدام است؟","options":["اطلس","هند","منجمد شمالی","آرام"],"correct_index":3, "category":"جغرافیا"},
+    {"question":"نویسنده رمان بینوایان چه کسی است؟","options":["ویکتور هوگو","تولستوی","بالزاک","کامو"],"correct_index":0, "category":"ادبیات"},
+    {"question":"حاصل 9×8 چند می‌شود؟","options":["72","81","64","69"],"correct_index":0, "category":"ریاضی"},
+    {"question":"کدام کشور در قاره آفریقا قرار دارد؟","options":["برزیل","کنیا","ژاپن","نروژ"],"correct_index":1, "category":"جغرافیا"},
+    {"question":"فرمول شیمیایی آب چیست؟","options":["CO2","H2O","O2","NaCl"],"correct_index":1, "category":"علوم"},
+    {"question":"اولین ماه سال شمسی چیست؟","options":["اسفند","فروردین","اردیبهشت","مهر"],"correct_index":1, "category":"عمومی"},
+    {"question":"رنگ حاصل از ترکیب آبی و زرد چیست؟","options":["بنفش","سبز","نارنجی","قهوه‌ای"],"correct_index":1, "category":"هنر"}
+]
+
+COUNTRIES = {
+    "ایران": "تهران",
+    "فرانسه": "پاریس",
+    "آلمان": "برلین",
+    "ایتالیا": "رم",
+    "ژاپن": "توکیو",
+    "هند": "دهلی نو",
+    "روسیه": "مسکو",
+    "ترکیه": "آنکارا",
+    "اسپانیا": "مادرید",
+    "عراق": "بغداد",
+    "چین": "پکن",
+    "پاکستان": "اسلام‌آباد",
+}
+
+CHEMISTRY = {
+    "آب": "H2O",
+    "دی‌اکسید کربن": "CO2",
+    "اکسیژن": "O2",
+    "نمک طعام": "NaCl",
+    "آمونیاک": "NH3",
+}
+
+PLANETS = {
+    "سیاره سرخ": "مریخ",
+    "بزرگ‌ترین سیاره منظومه شمسی": "مشتری",
+    "حلقه‌دارترین سیاره": "زحل",
+    "نزدیک‌ترین سیاره به خورشید": "عطارد",
+}
+
+MONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"]
+
+def load_json(path, default):
+    if not os.path.exists(path):
+        return default
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+def save_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def normalize_username(username: str):
+    return (username or "").strip().lower()
+
+def hash_password(password: str):
+    return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
+def is_sha256(value: str):
+    if not isinstance(value, str) or len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+        return True
+    except Exception:
+        return False
+
+def load_users():
+    users = load_json(USERS_FILE, [])
+    if not isinstance(users, list):
+        return []
+    fixed = []
+    changed = False
+    for u in users:
+        if not isinstance(u, dict):
+            continue
+        username = normalize_username(u.get("username", ""))
+        if not username:
+            continue
+        item = {
+            "name": str(u.get("name", username)).strip() or username,
+            "username": username,
+            "password": str(u.get("password", "")),
+            "nid": str(u.get("nid", "")).strip(),
+            "avatar": u.get("avatar") or DEFAULT_AVATAR,
+            "wallet": int(u.get("wallet", 0) or 0),
+        }
+        if item != u:
+            changed = True
+        fixed.append(item)
+    if changed:
+        save_json(USERS_FILE, fixed)
+    return fixed
+
+def save_users(users):
+    save_json(USERS_FILE, users)
+
+def find_user(username):
+    uname = normalize_username(username)
+    users = load_users()
+    return next((u for u in users if normalize_username(u.get("username")) == uname), None)
+
+def verify_password(user, password):
+    saved = str(user.get("password", ""))
+    if is_sha256(saved):
+        return saved == hash_password(password)
+    return saved == password
+
+def migrate_user_password_if_needed(user, password):
+    saved = str(user.get("password", ""))
+    if not is_sha256(saved) and saved == password:
+        users = load_users()
+        uname = normalize_username(user.get("username"))
+        for u in users:
+            if normalize_username(u.get("username")) == uname:
+                u["password"] = hash_password(password)
+                break
+        save_users(users)
+
+def default_game_state():
+    return {
+        "status": "waiting",
+        "participants": [],
+        "scores": {},
+        "turn_index": 0,
+        "used": [],
+        "turn_started_at": 0,
+        "current_question": None,
+        "winner_awarded": False,
+        "finished_at": 0,
+    }
+
+def load_game_state():
+    state = load_json(GAME_STATE_FILE, default_game_state())
+    if not isinstance(state, dict):
+        state = default_game_state()
+    for k, v in default_game_state().items():
+        state.setdefault(k, v)
+    if not isinstance(state.get("participants"), list):
+        state["participants"] = []
+    if not isinstance(state.get("scores"), dict):
+        state["scores"] = {}
+    if not isinstance(state.get("used"), list):
+        state["used"] = []
+    return state
+
+def save_game_state(state):
+    save_json(GAME_STATE_FILE, state)
+
+def default_settings():
+    return {
+        "sound": "on",
+        "theme": "blue",
+        "show_timer": "on",
+        "auto_refresh": "on",
+    }
+
+def load_settings():
+    data = load_json(SETTINGS_FILE, default_settings())
+    if not isinstance(data, dict):
+        data = default_settings()
+    for k, v in default_settings().items():
+        data.setdefault(k, v)
+    return data
+
+def save_settings(data):
+    save_json(SETTINGS_FILE, data)
+
+def reset_stale_waiting_state_if_needed(state):
+    participants = state.get("participants", [])
+    if state.get("status") == "active" and len(participants) < REQUIRED_PLAYERS:
+        return default_game_state()
+    return state
+
+def get_display_info(username):
+    user = find_user(username)
+    if not user:
+        return {"name": username or "کاربر", "avatar": DEFAULT_AVATAR}
+    return {
+        "name": user.get("name", username),
+        "avatar": user.get("avatar", DEFAULT_AVATAR) or DEFAULT_AVATAR
+    }
+
+def valid_nid(nid):
+    nid = str(nid).strip()
+    if not nid.isdigit() or len(nid) != 10:
+        return False
+    if len(set(nid)) == 1:
+        return False
+    check = int(nid[-1])
+    s = sum(int(nid[i]) * (10 - i) for i in range(9)) % 11
+    return (check == s) if s < 2 else (check == 11 - s)
+
+def save_uploaded_avatar(upload: UploadFile):
+    if not upload or not upload.filename:
+        return None
+    ext = os.path.splitext(upload.filename)[1].lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        return None
+    filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(upload.file, buffer)
+    return f"/static/uploads/{filename}"
+
+def normalize_question_item(q):
+    if not isinstance(q, dict):
+        return None
+    text = str(q.get("question", "")).strip()
+    options = q.get("options", [])
+    correct_index = q.get("correct_index", 0)
+    category = str(q.get("category", "عمومی")).strip() or "عمومی"
+    if not text or not isinstance(options, list) or len(options) != 4:
+        return None
+    try:
+        correct_index = int(correct_index)
+    except Exception:
+        correct_index = 0
+    if correct_index < 0 or correct_index > 3:
+        correct_index = 0
+    return {
+        "question": text,
+        "options": [str(x).strip() for x in options],
+        "correct_index": correct_index,
+        "category": category
+    }
+
+def load_questions():
+    data = load_json(QUESTIONS_FILE, FALLBACK_QUESTIONS)
+    if not isinstance(data, list):
+        data = FALLBACK_QUESTIONS
+    cleaned = []
+    seen_texts = set()
+    for q in data:
+        item = normalize_question_item(q)
+        if not item:
+            continue
+        if item["question"] in seen_texts:
+            continue
+        seen_texts.add(item["question"])
+        cleaned.append(item)
+    if not cleaned:
+        cleaned = FALLBACK_QUESTIONS[:]
+        save_questions(cleaned)
+    if len(cleaned) < 30:
+        cleaned = ensure_question_pool(cleaned, min_count=40)
+    return cleaned
+
+def save_questions(questions):
+    normalized = []
+    seen = set()
+    for q in questions:
+        item = normalize_question_item(q)
+        if not item:
+            continue
+        if item["question"] in seen:
+            continue
+        seen.add(item["question"])
+        normalized.append(item)
+    save_json(QUESTIONS_FILE, normalized)
+
+def make_mcq(question, correct_answer, wrong_answers, category="عمومی"):
+    options = [correct_answer] + wrong_answers[:3]
+    random.shuffle(options)
+    correct_index = options.index(correct_answer)
+    return {
+        "question": question,
+        "options": options,
+        "correct_index": correct_index,
+        "category": category
+    }
+
+def generate_math_question():
+    mode = random.choice(["add", "sub", "mul"])
+    if mode == "add":
+        a, b = random.randint(5, 80), random.randint(5, 80)
+        correct = str(a + b)
+        wrongs = list({str(a + b + random.randint(1, 9)), str(a + b - random.randint(1, 7)), str(a + b + random.randint(10, 20))})
+        while len(wrongs) < 3:
+            wrongs.append(str(a + b + random.randint(2, 15)))
+        return make_mcq(f"حاصل {a} + {b} چند می‌شود؟", correct, wrongs[:3], "ریاضی")
+    if mode == "sub":
+        a, b = random.randint(30, 100), random.randint(1, 29)
+        correct = str(a - b)
+        wrongs = list({str(a - b + random.randint(1, 7)), str(a - b - random.randint(1, 7)), str(a - b + random.randint(8, 14))})
+        while len(wrongs) < 3:
+            wrongs.append(str(a - b + random.randint(2, 15)))
+        return make_mcq(f"حاصل {a} - {b} چند می‌شود؟", correct, wrongs[:3], "ریاضی")
+    a, b = random.randint(2, 12), random.randint(2, 12)
+    correct = str(a * b)
+    wrongs = list({str(a * b + random.randint(1, 8)), str(a * b - random.randint(1, 6)), str((a+1) * b)})
+    while len(wrongs) < 3:
+        wrongs.append(str(a * b + random.randint(2, 15)))
+    return make_mcq(f"حاصل {a} × {b} چند می‌شود؟", correct, wrongs[:3], "ریاضی")
+
+def generate_capital_question():
+    country, capital = random.choice(list(COUNTRIES.items()))
+    wrongs = random.sample([v for k, v in COUNTRIES.items() if v != capital], 3)
+    return make_mcq(f"پایتخت {country} کدام است؟", capital, wrongs, "جغرافیا")
+
+def generate_chem_question():
+    name, formula = random.choice(list(CHEMISTRY.items()))
+    wrongs = random.sample([v for k, v in CHEMISTRY.items() if v != formula], min(3, len(CHEMISTRY)-1))
+    while len(wrongs) < 3:
+        wrongs.append(random.choice(["H2", "N2", "CaCO3", "CH4"]))
+        wrongs = list(dict.fromkeys(wrongs))
+    return make_mcq(f"فرمول شیمیایی {name} چیست؟", formula, wrongs[:3], "علوم")
+
+def generate_planet_question():
+    clue, answer = random.choice(list(PLANETS.items()))
+    pool = ["مریخ", "مشتری", "زحل", "عطارد", "زمین", "زهره", "اورانوس", "نپتون"]
+    wrongs = random.sample([x for x in pool if x != answer], 3)
+    return make_mcq(f"کدام گزینه {clue} است؟", answer, wrongs, "نجوم")
+
+def generate_month_question():
+    idx = random.randint(0, len(MONTHS)-1)
+    answer = MONTHS[idx]
+    qtype = random.choice(["num_to_month", "month_to_num"])
+    if qtype == "num_to_month":
+        wrongs = random.sample([m for m in MONTHS if m != answer], 3)
+        return make_mcq(f"ماه شماره {idx+1} سال شمسی کدام است؟", answer, wrongs, "عمومی")
+    correct = str(idx+1)
+    wrongs = random.sample([str(i) for i in range(1, 13) if i != idx+1], 3)
+    return make_mcq(f"{answer} چندمین ماه سال شمسی است؟", correct, wrongs, "عمومی")
+
+def generate_smart_question():
+    generator = random.choice([
+        generate_math_question,
+        generate_capital_question,
+        generate_chem_question,
+        generate_planet_question,
+        generate_month_question
+    ])
+    return generator()
+
+def ensure_question_pool(existing_questions, min_count=40):
+    questions = existing_questions[:]
+    seen = {q["question"] for q in questions if isinstance(q, dict) and q.get("question")}
+    tries = 0
+    while len(questions) < min_count and tries < 300:
+        tries += 1
+        q = normalize_question_item(generate_smart_question())
+        if not q:
+            continue
+        if q["question"] in seen:
+            continue
+        seen.add(q["question"])
+        questions.append(q)
+    save_questions(questions)
+    return questions
+
+def get_current_username(request: Request):
+    return normalize_username(request.cookies.get("username"))
+
+def get_current_user(request: Request):
+    return find_user(get_current_username(request))
+
+def is_admin(request: Request):
+    admin_user = request.cookies.get("admin_user")
+    admin_pass = request.cookies.get("admin_pass")
+    return admin_user == ADMIN_USERNAME and admin_pass == ADMIN_PASSWORD
+
+def get_leaderboard():
+    users = load_users()
+    users.sort(key=lambda x: int(x.get("wallet", 0)), reverse=True)
+    return users[:5]
+
+def build_board(state):
+    board = []
+    for username in state.get("participants", []):
+        info = get_display_info(username)
+        board.append({
+            "username": username,
+            "name": info["name"],
+            "avatar": info["avatar"],
+            "score": int(state.get("scores", {}).get(username, 0)),
+        })
+    board.sort(key=lambda x: x["score"], reverse=True)
+    return board
+
+def maybe_finish_game(state):
+    scores = state.get("scores", {})
+    if any(v >= WIN_SCORE for v in scores.values()):
+        state["status"] = "finished"
+        state["finished_at"] = int(time.time())
+    if state.get("status") == "finished" and not state.get("winner_awarded"):
+        board = build_board(state)
+        users = load_users()
+        for i, item in enumerate(board[:3]):
+            reward = RANK_COINS[i] if i < len(RANK_COINS) else 0
+            for u in users:
+                if normalize_username(u.get("username")) == normalize_username(item["username"]):
+                    u["wallet"] = int(u.get("wallet", 0)) + reward
+                    break
+        save_users(users)
+        state["winner_awarded"] = True
+    return state
+
+def get_or_create_question(state):
+    if state.get("current_question"):
+        return state["current_question"]
+
+    questions = load_questions()
+    used = [int(x) for x in state.get("used", []) if isinstance(x, int) or str(x).isdigit()]
+    available_indexes = [i for i in range(len(questions)) if i not in used]
+
+    if len(available_indexes) < 5:
+        questions = ensure_question_pool(questions, min_count=len(questions) + 20)
+        available_indexes = [i for i in range(len(questions)) if i not in used]
+
+    if not available_indexes:
+        state["status"] = "finished"
+        state["finished_at"] = int(time.time())
+        state["current_question"] = None
+        save_game_state(state)
+        return None
+
+    q_index = random.choice(available_indexes)
+    q = questions[q_index]
+    state["used"].append(q_index)
+    state["current_question"] = q
+    state["turn_started_at"] = int(time.time())
+    save_game_state(state)
+    return q
+
+def advance_turn(state):
+    participants = state.get("participants", [])
+    if not participants:
+        return state
+    state["turn_index"] = (int(state.get("turn_index", 0)) + 1) % len(participants)
+    state["current_question"] = None
+    state["turn_started_at"] = int(time.time())
+    return state
+
+def start_game_if_ready(state):
+    participants = []
+    seen = set()
+    for p in state.get("participants", []):
+        n = normalize_username(p)
+        if n and n not in seen:
+            participants.append(n)
+            seen.add(n)
+    state["participants"] = participants
+
+    for p in participants:
+        state["scores"].setdefault(p, 0)
+
+    if len(participants) >= REQUIRED_PLAYERS and state.get("status") == "waiting":
+        state["status"] = "active"
+        state["turn_index"] = 0
+        state["current_question"] = None
+        state["turn_started_at"] = int(time.time())
+        state["used"] = []
+        state["winner_awarded"] = False
+        state["finished_at"] = 0
+    return state
+
+def nav_context(request: Request, page_name: str = ""):
+    return {
+        "current_user": get_current_user(request),
+        "is_admin": is_admin(request),
+        "page_name": page_name,
+        "hide_top_logout": page_name in ["waiting", "game", "result"],
+    }
+
+@app.get("/", response_class=HTMLResponse)
+def splash(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "splash"))
+    return templates.TemplateResponse("splash.html", ctx)
+
+@app.get("/home", response_class=HTMLResponse)
+def home(request: Request):
+    user = get_current_user(request)
+    state = load_game_state()
+    ctx = {
+        "request": request,
+        "user": user,
+        "status": state.get("status", "waiting"),
+        "leaderboard": get_leaderboard(),
+        "required_players": REQUIRED_PLAYERS,
+        "is_admin": is_admin(request),
+        "settings": load_settings(),
+    }
+    ctx.update(nav_context(request, "home"))
+    return templates.TemplateResponse("home.html", ctx)
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "login"))
+    return templates.TemplateResponse("login.html", ctx)
+
+@app.post("/login")
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    user = find_user(username)
+    if not user or not verify_password(user, password):
+        return RedirectResponse("/login?error=1", status_code=303)
+    migrate_user_password_if_needed(user, password)
+    resp = RedirectResponse("/home", status_code=303)
+    resp.set_cookie("username", normalize_username(user["username"]), httponly=True, samesite="lax")
+    return resp
+
+@app.get("/register", response_class=HTMLResponse)
+def register_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "register"))
+    return templates.TemplateResponse("register.html", ctx)
+
+@app.post("/register")
+def register(
+    request: Request,
+    name: str = Form(...),
+    username: str = Form(...),
+    password: str = Form(...),
+    nid: str = Form(...),
+    accept_rules: str = Form(None),
+    avatar_file: UploadFile = File(None),
+):
+    username = normalize_username(username)
+    name = str(name).strip()
+    nid = str(nid).strip()
+
+    if accept_rules != "yes":
+        return RedirectResponse("/register?error=rules", status_code=303)
+    if len(password) < 4:
+        return RedirectResponse("/register?error=shortpass", status_code=303)
+    if not valid_nid(nid):
+        return RedirectResponse("/register?error=nid", status_code=303)
+
+    users = load_users()
+    if any(normalize_username(u.get("username")) == username for u in users):
+        return RedirectResponse("/register?error=exist", status_code=303)
+
+    avatar = save_uploaded_avatar(avatar_file) or random.choice(AVATARS)
+    users.append({
+        "name": name or username,
+        "username": username,
+        "password": hash_password(password),
+        "nid": nid,
+        "avatar": avatar,
+        "wallet": 0,
+    })
+    save_users(users)
+    return RedirectResponse("/login?registered=1", status_code=303)
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "forgot-password"))
+    return templates.TemplateResponse("forgot_password.html", ctx)
+
+@app.post("/forgot-password")
+def forgot_password(username: str = Form(...), nid: str = Form(...), new_password: str = Form(...)):
+    username = normalize_username(username)
+    nid = str(nid).strip()
+
+    if not valid_nid(nid):
+        return RedirectResponse("/forgot-password?error=nid", status_code=303)
+    if len(new_password) < 4:
+        return RedirectResponse("/forgot-password?error=shortpass", status_code=303)
+
+    users = load_users()
+    found = None
+    for u in users:
+        if normalize_username(u.get("username")) == username and str(u.get("nid", "")).strip() == nid:
+            found = u
+            break
+
+    if not found:
+        return RedirectResponse("/forgot-password?error=notfound", status_code=303)
+
+    found["password"] = hash_password(new_password)
+    save_users(users)
+    return RedirectResponse("/login?reset=1", status_code=303)
+
+@app.get("/profile", response_class=HTMLResponse)
+def profile_page(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    ctx = {"request": request, "user": user}
+    ctx.update(nav_context(request, "profile"))
+    return templates.TemplateResponse("profile.html", ctx)
+
+@app.post("/profile")
+def profile(
+    request: Request,
+    name: str = Form(...),
+    username: str = Form(...),
+    current_password: str = Form(""),
+    new_password: str = Form(""),
+    avatar_file: UploadFile = File(None),
+):
+    current_user = get_current_user(request)
+    if not current_user:
+        return RedirectResponse("/login", status_code=303)
+
+    new_username = normalize_username(username)
+    users = load_users()
+
+    if new_username != normalize_username(current_user["username"]):
+        if any(normalize_username(u.get("username")) == new_username for u in users):
+            return RedirectResponse("/profile?error=exist", status_code=303)
+
+    old_username = normalize_username(current_user["username"])
+
+    for u in users:
+        if normalize_username(u.get("username")) == old_username:
+            u["name"] = str(name).strip() or u["name"]
+            u["username"] = new_username
+
+            if new_password:
+                if len(new_password) < 4:
+                    return RedirectResponse("/profile?error=shortpass", status_code=303)
+                if not current_password:
+                    return RedirectResponse("/profile?error=current_required", status_code=303)
+                if not verify_password(u, current_password):
+                    return RedirectResponse("/profile?error=pass", status_code=303)
+                u["password"] = hash_password(new_password)
+
+            avatar = save_uploaded_avatar(avatar_file)
+            if avatar:
+                u["avatar"] = avatar
+            break
+
+    save_users(users)
+
+    state = load_game_state()
+    state["participants"] = [new_username if normalize_username(p) == old_username else p for p in state.get("participants", [])]
+    if old_username in state.get("scores", {}):
+        state["scores"][new_username] = state["scores"].pop(old_username)
+    save_game_state(state)
+
+    resp = RedirectResponse("/profile?updated=1", status_code=303)
+    resp.set_cookie("username", new_username, httponly=True, samesite="lax")
+    return resp
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings_page(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    ctx = {"request": request, "settings": load_settings()}
+    ctx.update(nav_context(request, "settings"))
+    return templates.TemplateResponse("settings.html", ctx)
+
+@app.post("/settings")
+def save_settings_route(
+    request: Request,
+    sound: str = Form("off"),
+    theme: str = Form("blue"),
+    show_timer: str = Form("off"),
+    auto_refresh: str = Form("off"),
+):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    data = {
+        "sound": "on" if sound == "on" else "off",
+        "theme": theme if theme in ["blue", "green", "dark"] else "blue",
+        "show_timer": "on" if show_timer == "on" else "off",
+        "auto_refresh": "on" if auto_refresh == "on" else "off",
+    }
+    save_settings(data)
+    return RedirectResponse("/settings?saved=1", status_code=303)
+
+@app.get("/logout")
+def logout():
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie("username")
+    return resp
+
+@app.get("/waiting", response_class=HTMLResponse)
+def waiting(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    state = reset_stale_waiting_state_if_needed(load_game_state())
+    username = normalize_username(user["username"])
+
+    if state.get("status") == "finished":
+        state = default_game_state()
+
+    if username not in [normalize_username(x) for x in state.get("participants", [])]:
+        state["participants"].append(username)
+
+    state["scores"].setdefault(username, 0)
+    state = start_game_if_ready(state)
+    save_game_state(state)
+
+    if state["status"] == "active":
+        return RedirectResponse("/game", status_code=303)
+    if state["status"] == "finished":
+        return RedirectResponse("/result", status_code=303)
+
+    players = []
+    for p in state["participants"]:
+        info = get_display_info(p)
+        players.append({"name": info["name"], "avatar": info["avatar"]})
+
+    ctx = {
+        "request": request,
+        "count": len(state["participants"]),
+        "required_players": REQUIRED_PLAYERS,
+        "players": players,
+        "auto_refresh": True,
+        "settings": load_settings(),
+    }
+    ctx.update(nav_context(request, "waiting"))
+    return templates.TemplateResponse("waiting.html", ctx)
+
+@app.get("/waiting-status")
+def waiting_status(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"ok": False, "redirect": "/login"})
+
+    state = start_game_if_ready(reset_stale_waiting_state_if_needed(load_game_state()))
+    save_game_state(state)
+
+    return JSONResponse({
+        "ok": True,
+        "status": state.get("status", "waiting"),
+        "count": len(state.get("participants", [])),
+        "required": REQUIRED_PLAYERS,
+        "redirect": "/game" if state.get("status") == "active" else ("/result" if state.get("status") == "finished" else None)
+    })
+
+@app.get("/game", response_class=HTMLResponse)
+def game(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    result_flag = request.query_params.get("result", "")
+    selected_raw = request.query_params.get("selected", "")
+    try:
+        selected_answer = int(selected_raw) if selected_raw else None
+    except Exception:
+        selected_answer = None
+
+    state = start_game_if_ready(reset_stale_waiting_state_if_needed(load_game_state()))
+    save_game_state(state)
+
+    if state["status"] == "waiting":
+        return RedirectResponse("/waiting", status_code=303)
+    if state["status"] == "finished":
+        return RedirectResponse("/result", status_code=303)
+
+    participants = state.get("participants", [])
+    if not participants:
+        return RedirectResponse("/waiting", status_code=303)
+
+    now = int(time.time())
+    started_at = int(state.get("turn_started_at", now))
+    if now - started_at >= TIMER_SECONDS:
+        turn_user = participants[state.get("turn_index", 0) % len(participants)]
+        state["scores"][turn_user] = int(state["scores"].get(turn_user, 0)) - TIMEOUT_PENALTY
+        state = advance_turn(state)
+        state = maybe_finish_game(state)
+        save_game_state(state)
+        if state["status"] == "finished":
+            return RedirectResponse("/result", status_code=303)
+        return RedirectResponse("/game", status_code=303)
+
+    turn_index = state.get("turn_index", 0) % len(participants)
+    turn_username = participants[turn_index]
+    turn_info = get_display_info(turn_username)
+    q = get_or_create_question(state)
+
+    if q is None:
+        state = maybe_finish_game(state)
+        save_game_state(state)
+        return RedirectResponse("/result", status_code=303)
+
+    payload = {
+        "timer": max(0, TIMER_SECONDS - (int(time.time()) - int(state.get("turn_started_at", int(time.time()))))),
+        "turn_name": turn_info["name"],
+        "turn_avatar": turn_info["avatar"],
+        "is_turn": normalize_username(user["username"]) == normalize_username(turn_username),
+        "question": {
+            "text": q["question"],
+            "options": q["options"],
+            "correct_index": int(q["correct_index"]) + 1
+        },
+        "board": build_board(state),
+        "answer_result": result_flag,
+        "selected_answer": selected_answer,
+        "settings": load_settings(),
+    }
+    ctx = {"request": request, "payload": payload}
+    ctx.update(nav_context(request, "game"))
+    return templates.TemplateResponse("game.html", ctx)
+
+@app.post("/answer")
+def answer(request: Request, ans: int = Form(...)):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    state = load_game_state()
+    if state["status"] != "active":
+        return RedirectResponse("/home", status_code=303)
+
+    participants = state.get("participants", [])
+    if not participants:
+        return RedirectResponse("/waiting", status_code=303)
+
+    turn_index = state.get("turn_index", 0) % len(participants)
+    turn_username = participants[turn_index]
+
+    if normalize_username(user["username"]) != normalize_username(turn_username):
+        return RedirectResponse("/game", status_code=303)
+
+    q = get_or_create_question(state)
+    if q is None:
+        state["status"] = "finished"
+        save_game_state(state)
+        return RedirectResponse("/result", status_code=303)
+
+    correct = int(q["correct_index"]) + 1
+    result_flag = "wrong"
+
+    if int(ans) == correct:
+        state["scores"][turn_username] = int(state["scores"].get(turn_username, 0)) + CORRECT_SCORE
+        result_flag = "correct"
+    else:
+        state["scores"][turn_username] = int(state["scores"].get(turn_username, 0)) - WRONG_PENALTY
+
+    state = maybe_finish_game(state)
+    save_game_state(state)
+
+    if state["status"] == "finished":
+        return RedirectResponse("/result", status_code=303)
+
+    return RedirectResponse(f"/game?result={result_flag}&selected={int(ans)}", status_code=303)
+
+@app.post("/next-turn")
+def next_turn(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+
+    state = load_game_state()
+    if state.get("status") != "active":
+        return RedirectResponse("/home", status_code=303)
+
+    participants = state.get("participants", [])
+    if not participants:
+        return RedirectResponse("/waiting", status_code=303)
+
+    turn_index = state.get("turn_index", 0) % len(participants)
+    turn_username = participants[turn_index]
+
+    if normalize_username(user["username"]) != normalize_username(turn_username):
+        return RedirectResponse("/game", status_code=303)
+
+    state = advance_turn(state)
+    state = maybe_finish_game(state)
+    save_game_state(state)
+
+    if state["status"] == "finished":
+        return RedirectResponse("/result", status_code=303)
+    return RedirectResponse("/game", status_code=303)
+
+@app.get("/result", response_class=HTMLResponse)
+def result(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    state = load_game_state()
+    board = build_board(state)
+    ctx = {
+        "request": request,
+        "board": board,
+        "is_admin": is_admin(request),
+    }
+    ctx.update(nav_context(request, "result"))
+    return templates.TemplateResponse("result.html", ctx)
+
+@app.get("/play-again")
+def play_again(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/waiting", status_code=303)
+
+@app.get("/reset-game")
+def reset_game(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+    save_game_state(default_game_state())
+    return RedirectResponse("/home?reset=1", status_code=303)
+
+@app.get("/admin-login", response_class=HTMLResponse)
+def admin_login_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "admin-login"))
+    return templates.TemplateResponse("admin_login.html", ctx)
+
+@app.post("/admin-login")
+def admin_login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        resp = RedirectResponse("/admin", status_code=303)
+        resp.set_cookie("admin_user", username, httponly=True, samesite="lax")
+        resp.set_cookie("admin_pass", password, httponly=True, samesite="lax")
+        return resp
+    return RedirectResponse("/admin-login?error=1", status_code=303)
+
+@app.get("/admin-logout")
+def admin_logout():
+    resp = RedirectResponse("/home", status_code=303)
+    resp.delete_cookie("admin_user")
+    resp.delete_cookie("admin_pass")
+    return resp
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin_panel(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+    users = load_users()
+    state = load_game_state()
+    questions = load_questions()
+    ctx = {
+        "request": request,
+        "users": users,
+        "state": state,
+        "questions_count": len(questions),
+    }
+    ctx.update(nav_context(request, "admin"))
+    return templates.TemplateResponse("admin.html", ctx)
+
+@app.get("/admin/questions", response_class=HTMLResponse)
+def admin_questions_page(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+    questions = load_questions()
+    ctx = {
+        "request": request,
+        "questions": questions,
+        "questions_count": len(questions),
+    }
+    ctx.update(nav_context(request, "admin-questions"))
+    return templates.TemplateResponse("admin_questions.html", ctx)
+
+@app.post("/admin/questions/add")
+def admin_questions_add(
+    request: Request,
+    question: str = Form(...),
+    option1: str = Form(...),
+    option2: str = Form(...),
+    option3: str = Form(...),
+    option4: str = Form(...),
+    correct_index: int = Form(...),
+    category: str = Form("عمومی"),
+):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+
+    questions = load_questions()
+    new_item = normalize_question_item({
+        "question": question,
+        "options": [option1, option2, option3, option4],
+        "correct_index": correct_index - 1,
+        "category": category,
+    })
+    if new_item:
+        if not any(q["question"] == new_item["question"] for q in questions):
+            questions.append(new_item)
+            save_questions(questions)
+    return RedirectResponse("/admin/questions?added=1", status_code=303)
+
+@app.get("/admin/questions/delete/{qid}")
+def admin_questions_delete(request: Request, qid: int):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+    questions = load_questions()
+    if 0 <= qid < len(questions):
+        questions.pop(qid)
+        save_questions(questions)
+    return RedirectResponse("/admin/questions?deleted=1", status_code=303)
+
+@app.get("/admin/questions/generate")
+def admin_questions_generate(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+    questions = load_questions()
+    questions = ensure_question_pool(questions, min_count=len(questions) + 20)
+    save_questions(questions)
+    return RedirectResponse("/admin/questions?generated=1", status_code=303)
+
+@app.get("/admin/delete-user/{username}")
+def admin_delete_user(request: Request, username: str):
+    if not is_admin(request):
+        return RedirectResponse("/admin-login", status_code=303)
+
+    uname = normalize_username(username)
+    users = [u for u in load_users() if normalize_username(u.get("username")) != uname]
+    save_users(users)
+
+    state = load_game_state()
+    state["participants"] = [p for p in state.get("participants", []) if normalize_username(p) != uname]
+    if uname in state.get("scores", {}):
+        state["scores"].pop(uname, None)
+    save_game_state(state)
+
+    return RedirectResponse("/admin?deleted=1", status_code=303)
+
+@app.get("/help", response_class=HTMLResponse)
+def help_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "help"))
+    return templates.TemplateResponse("help.html", ctx)
+
+@app.get("/about", response_class=HTMLResponse)
+def about_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "about"))
+    return templates.TemplateResponse("about.html", ctx)
+
+@app.get("/contact", response_class=HTMLResponse)
+def contact_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "contact"))
+    return templates.TemplateResponse("contact.html", ctx)
+
+@app.get("/support", response_class=HTMLResponse)
+def support_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "support"))
+    return templates.TemplateResponse("support.html", ctx)
+
+@app.get("/rules", response_class=HTMLResponse)
+def rules_page(request: Request):
+    ctx = {"request": request}
+    ctx.update(nav_context(request, "rules"))
+    return templates.TemplateResponse("rules.html", ctx)
+
+# =========================
+#   PHASE 3 - SAFE ADDON
+# =========================
+
+def backup_data():
+    for f in [USERS_FILE, QUESTIONS_FILE]:
+        if os.path.exists(f):
+            shutil.copy(f, f + ".bak")
+
+@app.get("/admin/questions", response_class=HTMLResponse)
+def admin_questions(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/home", status_code=303)
+
+    return templates.TemplateResponse(
+        "admin_questions.html",
+        {
+            "request": request,
+            "questions": load_questions(),
+        }
+    )
+
+@app.post("/admin/questions/add")
+def add_question(
+    request: Request,
+    question: str = Form(...),
+    opt1: str = Form(...),
+    opt2: str = Form(...),
+    opt3: str = Form(...),
+    opt4: str = Form(...),
+    correct: int = Form(...),
+):
+    if not is_admin(request):
+        return RedirectResponse("/home", status_code=303)
+
+    questions = load_questions()
+
+    questions.append({
+        "question": question.strip(),
+        "options": [
+            opt1.strip(),
+            opt2.strip(),
+            opt3.strip(),
+            opt4.strip()
+        ],
+        "correct_index": int(correct),
+        "category": "عمومی"
+    })
+
+    backup_data()
+    save_questions(questions)
+
+    return RedirectResponse("/admin/questions", status_code=303)
+
+# =========================
+#   PHASE 3 - SAFE ADDON
+# =========================
+
+def backup_data():
+    for f in [USERS_FILE, QUESTIONS_FILE]:
+        if os.path.exists(f):
+            shutil.copy(f, f + ".bak")
+
+@app.get("/admin/questions", response_class=HTMLResponse)
+def admin_questions(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/home", status_code=303)
+
+    return templates.TemplateResponse(
+        "admin_questions.html",
+        {
+            "request": request,
+            "questions": load_questions(),
+        }
+    )
+
+@app.post("/admin/questions/add")
+def add_question(
+    request: Request,
+    question: str = Form(...),
+    opt1: str = Form(...),
+    opt2: str = Form(...),
+    opt3: str = Form(...),
+    opt4: str = Form(...),
+    correct: int = Form(...),
+):
+    if not is_admin(request):
+        return RedirectResponse("/home", status_code=303)
+
+    questions = load_questions()
+
+    questions.append({
+        "question": question.strip(),
+        "options": [
+            opt1.strip(),
+            opt2.strip(),
+            opt3.strip(),
+            opt4.strip()
+        ],
+        "correct_index": int(correct),
+        "category": "عمومی"
+    })
+
+    backup_data()
+    save_questions(questions)
+
+    return RedirectResponse("/admin/questions", status_code=303)
+
+@app.get("/leaderboard", response_class=HTMLResponse)
+def leaderboard_page(request: Request):
+    ctx = {
+        "request": request,
+        "leaderboard": get_leaderboard(),
+    }
+    ctx.update(nav_context(request, "leaderboard"))
+    return templates.TemplateResponse("leaderboard.html", ctx)
+
+# =========================
+#   PHASE 3 - SAFE ADDON
+# =========================
+
+def backup_data():
+    for f in [USERS_FILE, QUESTIONS_FILE]:
+        if os.path.exists(f):
+            shutil.copy(f, f + ".bak")
+
+@app.get("/admin/questions", response_class=HTMLResponse)
+def admin_questions(request: Request):
+    if not is_admin(request):
+        return RedirectResponse("/home", status_code=303)
+
+    return templates.TemplateResponse(
+        "admin_questions.html",
+        {
+            "request": request,
+            "questions": load_questions(),
+        }
+    )
+
+@app.post("/admin/questions/add")
+def add_question(
+    request: Request,
+    question: str = Form(...),
+    opt1: str = Form(...),
+    opt2: str = Form(...),
+    opt3: str = Form(...),
+    opt4: str = Form(...),
+    correct: int = Form(...),
+):
+    if not is_admin(request):
+        return RedirectResponse("/home", status_code=303)
+
+    questions = load_questions()
+
+    questions.append({
+        "question": question.strip(),
+        "options": [
+            opt1.strip(),
+            opt2.strip(),
+            opt3.strip(),
+            opt4.strip()
+        ],
+        "correct_index": int(correct),
+        "category": "عمومی"
+    })
+
+    backup_data()
+    save_questions(questions)
+
+    return RedirectResponse("/admin/questions", status_code=303)
+
+@app.get("/leaderboard", response_class=HTMLResponse)
+def leaderboard_page(request: Request):
+    ctx = {
+        "request": request,
+        "leaderboard": get_leaderboard(),
+    }
+    ctx.update(nav_context(request, "leaderboard"))
+    return templates.TemplateResponse("leaderboard.html", ctx)

@@ -1,0 +1,601 @@
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+import os
+import json
+import random
+import time
+import requests
+
+app = FastAPI()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(STATIC_DIR, exist_ok=True)
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
+
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
+STATE_FILE = os.path.join(DATA_DIR, "state.json")
+WITHDRAWALS_FILE = os.path.join(DATA_DIR, "withdrawals.json")
+
+ALLOWED_ENTRY_FEES = [1000, 2000, 3000, 4000, 5000]
+REQUIRED_PLAYERS = 3
+MAX_QUESTIONS_PER_PLAYER = 10
+
+ADMIN_SHARE_PERCENT = 5
+FIRST_SHARE_PERCENT = 45
+SECOND_SHARE_PERCENT = 35
+THIRD_SHARE_PERCENT = 15
+
+ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID", "").strip()
+ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL", "http://127.0.0.1:8003/payment/callback").strip()
+ZARINPAL_REQUEST_URL = "https://payment.zarinpal.com/pg/v4/payment/request.json"
+ZARINPAL_VERIFY_URL = "https://payment.zarinpal.com/pg/v4/payment/verify.json"
+ZARINPAL_START_URL = "https://payment.zarinpal.com/pg/StartPay/{}"
+
+def ensure_file(path, default_data):
+    if not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(default_data, f, ensure_ascii=False, indent=2)
+
+ensure_file(USERS_FILE, {})
+ensure_file(WITHDRAWALS_FILE, [])
+ensure_file(
+    STATE_FILE,
+    {
+        "status": "waiting",
+        "message": "در انتظار تکمیل بازیکنان",
+        "selected_entry_fee": 5000,
+        "admin_earnings": 0,
+        "current_game_id": 1,
+        "last_results": [],
+        "last_pool": 0,
+        "last_admin_share": 0
+    }
+)
+
+def load_users():
+    with open(USERS_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_users(users):
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+
+def load_state():
+    with open(STATE_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_state(state):
+    with open(STATE_FILE, "w", encoding="utf-8") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
+
+def load_withdrawals():
+    with open(WITHDRAWALS_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_withdrawals(items):
+    with open(WITHDRAWALS_FILE, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, indent=2)
+
+def get_current_username(request: Request):
+    return request.cookies.get("username")
+
+def get_current_user(request: Request):
+    username = get_current_username(request)
+    if not username:
+        return None, None
+    users = load_users()
+    user = users.get(username)
+    return username, user
+
+def init_user(username, password):
+    users = load_users()
+    if username in users:
+        return False, "این نام کاربری قبلاً ثبت شده است."
+
+    users[username] = {
+        "username": username,
+        "password": password,
+        "paid": False,
+        "entry_paid": False,
+        "selected_fee": 0,
+        "score": 0,
+        "deposit_balance": 0,
+        "profit_balance": 0,
+        "withdrawn_profit": 0,
+        "current_escrow": 0,
+        "last_reward": 0,
+        "last_profit": 0,
+        "last_rank": None,
+        "games_played": 0,
+        "can_withdraw": False,
+        "last_payment_ref": "",
+        "pending_payment_authority": "",
+        "pending_payment_amount": 0
+    }
+    save_users(users)
+    return True, "ثبت‌نام با موفقیت انجام شد."
+
+def eligible_paid_players(users):
+    return [
+        u for u in users.values()
+        if u.get("paid") and u.get("entry_paid") and u.get("current_escrow", 0) > 0
+    ]
+
+def calculate_pool(players):
+    return sum(p.get("current_escrow", 0) for p in players)
+
+def calc_rewards(pool_amount):
+    first = int(pool_amount * FIRST_SHARE_PERCENT / 100)
+    second = int(pool_amount * SECOND_SHARE_PERCENT / 100)
+    third = int(pool_amount * THIRD_SHARE_PERCENT / 100)
+    admin = pool_amount - first - second - third
+    return {1: first, 2: second, 3: third, "admin": admin}
+
+def update_withdrawable_status(user):
+    user["can_withdraw"] = user.get("profit_balance", 0) >= 10000
+
+def maybe_start_game():
+    users = load_users()
+    state = load_state()
+    paid_players = eligible_paid_players(users)
+
+    if len(paid_players) >= REQUIRED_PLAYERS:
+        state["status"] = "live"
+        state["message"] = "بازی شروع شده است."
+    else:
+        state["status"] = "waiting"
+        state["message"] = f"در انتظار {REQUIRED_PLAYERS} بازیکن برای شروع"
+
+    save_state(state)
+    save_users(users)
+
+def run_game_if_ready():
+    users = load_users()
+    state = load_state()
+    players = eligible_paid_players(users)
+
+    if len(players) != REQUIRED_PLAYERS:
+        state["status"] = "waiting"
+        state["message"] = f"برای شروع بازی باید دقیقاً {REQUIRED_PLAYERS} بازیکن پرداخت کرده باشند."
+        save_state(state)
+        return False
+
+    for p in players:
+        p["score"] = random.randint(0, MAX_QUESTIONS_PER_PLAYER)
+
+    players_sorted = sorted(players, key=lambda x: x["score"], reverse=True)
+    pool = calculate_pool(players_sorted)
+    rewards = calc_rewards(pool)
+
+    results = []
+    for idx, player in enumerate(players_sorted, start=1):
+        reward = rewards[idx]
+        escrow = player.get("current_escrow", 0)
+        profit = reward - escrow
+
+        player["last_rank"] = idx
+        player["last_reward"] = reward
+        player["last_profit"] = profit
+        player["games_played"] = player.get("games_played", 0) + 1
+        player["deposit_balance"] = player.get("deposit_balance", 0) + escrow
+        player["profit_balance"] = player.get("profit_balance", 0) + profit
+        update_withdrawable_status(player)
+
+        results.append({
+            "rank": idx,
+            "username": player["username"],
+            "score": player["score"],
+            "reward": reward,
+            "escrow": escrow,
+            "profit": profit
+        })
+
+    admin_share = rewards["admin"]
+    state["admin_earnings"] = state.get("admin_earnings", 0) + admin_share
+    state["last_results"] = results
+    state["last_pool"] = pool
+    state["last_admin_share"] = admin_share
+    state["status"] = "finished"
+    state["message"] = "بازی پایان یافت و نتایج ثبت شد."
+    state["current_game_id"] = state.get("current_game_id", 1) + 1
+
+    for player in players_sorted:
+        player["paid"] = False
+        player["entry_paid"] = False
+        player["current_escrow"] = 0
+        player["selected_fee"] = 0
+        player["score"] = 0
+        player["pending_payment_authority"] = ""
+        player["pending_payment_amount"] = 0
+
+    save_users(users)
+    save_state(state)
+    return True
+
+def zarinpal_request_payment(amount, description, mobile=None):
+    payload = {
+        "merchant_id": ZARINPAL_MERCHANT_ID,
+        "amount": amount,
+        "callback_url": ZARINPAL_CALLBACK_URL,
+        "description": description,
+        "metadata": {}
+    }
+    if mobile:
+        payload["metadata"]["mobile"] = mobile
+
+    response = requests.post(ZARINPAL_REQUEST_URL, json=payload, timeout=30)
+    return response.json()
+
+def zarinpal_verify_payment(amount, authority):
+    payload = {
+        "merchant_id": ZARINPAL_MERCHANT_ID,
+        "amount": amount,
+        "authority": authority
+    }
+    response = requests.post(ZARINPAL_VERIFY_URL, json=payload, timeout=30)
+    return response.json()
+
+@app.get("/", response_class=HTMLResponse)
+def root():
+    return RedirectResponse(url="/intro", status_code=302)
+
+@app.get("/intro", response_class=HTMLResponse)
+def intro(request: Request):
+    state = load_state()
+    entry_fee = state.get("selected_entry_fee", 5000)
+    estimated_pool = entry_fee * REQUIRED_PLAYERS
+    shares = calc_rewards(estimated_pool)
+    return templates.TemplateResponse("intro.html", {
+        "request": request,
+        "entry_fee": entry_fee,
+        "required_players": REQUIRED_PLAYERS,
+        "estimated_pool": estimated_pool,
+        "first_share": shares[1],
+        "second_share": shares[2],
+        "third_share": shares[3],
+        "admin_share": shares["admin"],
+        "allowed_fees": ALLOWED_ENTRY_FEES
+    })
+
+@app.get("/register", response_class=HTMLResponse)
+def register_get(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request, "error": None})
+
+@app.post("/register", response_class=HTMLResponse)
+def register_post(request: Request, username: str = Form(...), password: str = Form(...)):
+    ok, message = init_user(username.strip(), password.strip())
+    if not ok:
+        return templates.TemplateResponse("register.html", {"request": request, "error": message})
+    response = RedirectResponse(url="/home", status_code=303)
+    response.set_cookie("username", username.strip(), httponly=False)
+    return response
+
+@app.get("/login", response_class=HTMLResponse)
+def login_get(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+@app.post("/login", response_class=HTMLResponse)
+def login_post(request: Request, username: str = Form(...), password: str = Form(...)):
+    users = load_users()
+    user = users.get(username.strip())
+    if not user or user.get("password") != password.strip():
+        return templates.TemplateResponse("login.html", {
+            "request": request,
+            "error": "نام کاربری یا رمز عبور نادرست است."
+        })
+    response = RedirectResponse(url="/home", status_code=303)
+    response.set_cookie("username", username.strip(), httponly=False)
+    return response
+
+@app.post("/logout")
+def logout():
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("username")
+    return response
+
+@app.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password(request: Request):
+    return templates.TemplateResponse("forgot_password.html", {"request": request})
+
+@app.get("/home", response_class=HTMLResponse)
+def home(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    state = load_state()
+    users = load_users()
+    paid_count = len(eligible_paid_players(users))
+    return templates.TemplateResponse("home.html", {
+        "request": request,
+        "username": username,
+        "user": user,
+        "state": state,
+        "paid_count": paid_count,
+        "required_players": REQUIRED_PLAYERS,
+        "allowed_fees": ALLOWED_ENTRY_FEES
+    })
+
+@app.get("/payment", response_class=HTMLResponse)
+def payment_get(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    state = load_state()
+    current_fee = state.get("selected_entry_fee", 5000)
+    return templates.TemplateResponse("payment.html", {
+        "request": request,
+        "username": username,
+        "user": user,
+        "entry_fee": current_fee,
+        "allowed_fees": ALLOWED_ENTRY_FEES,
+        "required_players": REQUIRED_PLAYERS,
+        "gateway_ready": bool(ZARINPAL_MERCHANT_ID),
+        "error": None
+    })
+
+@app.post("/payment")
+def payment_post(request: Request, entry_fee: int = Form(...)):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    if entry_fee not in ALLOWED_ENTRY_FEES:
+        return templates.TemplateResponse("payment.html", {
+            "request": request,
+            "username": username,
+            "user": user,
+            "entry_fee": 5000,
+            "allowed_fees": ALLOWED_ENTRY_FEES,
+            "required_players": REQUIRED_PLAYERS,
+            "gateway_ready": bool(ZARINPAL_MERCHANT_ID),
+            "error": "مبلغ انتخابی مجاز نیست."
+        })
+
+    if not ZARINPAL_MERCHANT_ID:
+        return templates.TemplateResponse("payment.html", {
+            "request": request,
+            "username": username,
+            "user": user,
+            "entry_fee": entry_fee,
+            "allowed_fees": ALLOWED_ENTRY_FEES,
+            "required_players": REQUIRED_PLAYERS,
+            "gateway_ready": False,
+            "error": "مرچنت آی‌دی زرین‌پال تنظیم نشده است."
+        })
+
+    description = f"امانت ورود مسابقه برای کاربر {username}"
+    try:
+        result = zarinpal_request_payment(entry_fee, description)
+    except Exception:
+        return templates.TemplateResponse("payment.html", {
+            "request": request,
+            "username": username,
+            "user": user,
+            "entry_fee": entry_fee,
+            "allowed_fees": ALLOWED_ENTRY_FEES,
+            "required_players": REQUIRED_PLAYERS,
+            "gateway_ready": True,
+            "error": "اتصال به زرین‌پال برقرار نشد."
+        })
+
+    data = result.get("data", {})
+    errors = result.get("errors", {})
+    authority = data.get("authority")
+
+    if not authority:
+        message = errors.get("message", "درخواست پرداخت ناموفق بود.")
+        return templates.TemplateResponse("payment.html", {
+            "request": request,
+            "username": username,
+            "user": user,
+            "entry_fee": entry_fee,
+            "allowed_fees": ALLOWED_ENTRY_FEES,
+            "required_players": REQUIRED_PLAYERS,
+            "gateway_ready": True,
+            "error": str(message)
+        })
+
+    users = load_users()
+    state = load_state()
+
+    users[username]["selected_fee"] = entry_fee
+    users[username]["pending_payment_authority"] = authority
+    users[username]["pending_payment_amount"] = entry_fee
+
+    state["selected_entry_fee"] = entry_fee
+    save_users(users)
+    save_state(state)
+
+    return RedirectResponse(url=ZARINPAL_START_URL.format(authority), status_code=303)
+
+@app.get("/payment/callback")
+def payment_callback(request: Request, Authority: str = "", Status: str = ""):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    users = load_users()
+    current_user = users.get(username)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    pending_authority = current_user.get("pending_payment_authority", "")
+    pending_amount = current_user.get("pending_payment_amount", 0)
+
+    if not Authority or Status != "OK" or Authority != pending_authority or not pending_amount:
+        return RedirectResponse(url="/payment", status_code=303)
+
+    try:
+        result = zarinpal_verify_payment(pending_amount, Authority)
+    except Exception:
+        return RedirectResponse(url="/payment", status_code=303)
+
+    data = result.get("data", {})
+    ref_id = data.get("ref_id")
+    code = data.get("code")
+
+    if code not in (100, 101):
+        return RedirectResponse(url="/payment", status_code=303)
+
+    current_user["paid"] = True
+    current_user["entry_paid"] = True
+    current_user["current_escrow"] = pending_amount
+    current_user["last_payment_ref"] = str(ref_id)
+    current_user["pending_payment_authority"] = ""
+    current_user["pending_payment_amount"] = 0
+
+    state = load_state()
+    state["status"] = "waiting"
+    state["message"] = "پرداخت با موفقیت ثبت شد. امانت شما وارد صندوق مسابقه شد."
+
+    save_users(users)
+    save_state(state)
+
+    maybe_start_game()
+    return RedirectResponse(url="/waiting", status_code=303)
+
+@app.get("/waiting", response_class=HTMLResponse)
+def waiting(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    users = load_users()
+    state = load_state()
+    paid_players = eligible_paid_players(users)
+    paid_count = len(paid_players)
+
+    if paid_count == REQUIRED_PLAYERS:
+        run_game_if_ready()
+        return RedirectResponse(url="/results", status_code=303)
+
+    return templates.TemplateResponse("waiting.html", {
+        "request": request,
+        "username": username,
+        "user": user,
+        "state": state,
+        "paid_count": paid_count,
+        "required_players": REQUIRED_PLAYERS
+    })
+
+@app.get("/game", response_class=HTMLResponse)
+def game(request: Request):
+    return RedirectResponse(url="/results", status_code=303)
+
+@app.get("/results", response_class=HTMLResponse)
+def results(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    state = load_state()
+    results_data = state.get("last_results", [])
+    scoreboard = {item["username"]: item["score"] for item in results_data}
+
+    return templates.TemplateResponse("results.html", {
+        "request": request,
+        "username": username,
+        "user": user,
+        "state": state,
+        "results": results_data,
+        "scoreboard": scoreboard,
+        "admin_share": state.get("last_admin_share", 0),
+        "prize_pool": state.get("last_pool", 0),
+        "withdraw_threshold": 10000
+    })
+
+@app.post("/request-withdrawal")
+def request_withdrawal(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    users = load_users()
+    current_user = users.get(username)
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    profit_balance = current_user.get("profit_balance", 0)
+    withdrawn_profit = current_user.get("withdrawn_profit", 0)
+    available_profit = profit_balance - withdrawn_profit
+
+    if available_profit < 10000:
+        return RedirectResponse(url="/results", status_code=303)
+
+    withdrawals = load_withdrawals()
+    withdrawals.append({
+        "username": username,
+        "amount": available_profit,
+        "status": "pending",
+        "created_at": int(time.time())
+    })
+    save_withdrawals(withdrawals)
+
+    current_user["withdrawn_profit"] = current_user.get("withdrawn_profit", 0) + available_profit
+    update_withdrawable_status(current_user)
+    save_users(users)
+
+    return RedirectResponse(url="/results", status_code=303)
+
+@app.get("/settings", response_class=HTMLResponse)
+def settings(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    state = load_state()
+    withdrawals = load_withdrawals()
+
+    return templates.TemplateResponse("settings.html", {
+        "request": request,
+        "username": username,
+        "user": user,
+        "state": state,
+        "entry_fee": state.get("selected_entry_fee", 5000),
+        "required_players": REQUIRED_PLAYERS,
+        "max_questions_per_player": MAX_QUESTIONS_PER_PLAYER,
+        "withdrawals": withdrawals
+    })
+
+@app.post("/reset-state")
+def reset_state(request: Request):
+    username, user = get_current_user(request)
+    if not username or not user:
+        return RedirectResponse(url="/login", status_code=303)
+
+    users = load_users()
+    for item in users.values():
+        item["paid"] = False
+        item["entry_paid"] = False
+        item["selected_fee"] = 0
+        item["score"] = 0
+        item["current_escrow"] = 0
+        item["last_reward"] = 0
+        item["last_profit"] = 0
+        item["last_rank"] = None
+        item["pending_payment_authority"] = ""
+        item["pending_payment_amount"] = 0
+        update_withdrawable_status(item)
+
+    save_users(users)
+
+    state = load_state()
+    state["status"] = "waiting"
+    state["message"] = "وضعیت بازی بازنشانی شد."
+    state["last_results"] = []
+    state["last_pool"] = 0
+    state["last_admin_share"] = 0
+    save_state(state)
+
+    return RedirectResponse(url="/home", status_code=303)

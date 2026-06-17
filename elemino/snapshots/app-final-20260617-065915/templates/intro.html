@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}معرفی مسابقه{% endblock %}
+{% block content %}
+<div class="grid">
+    <section class="card">
+        <span class="badge">ورود شفاف و امانی</span>
+        <h1>مسابقه با صندوق امانت و سود بر اساس رتبه</h1>
+        <p>
+            مبلغی که کاربر برای ورود پرداخت می‌کند <strong>هزینه</strong> نیست؛
+            بلکه به عنوان <strong>امانت ورود به مسابقه</strong> در صندوق بازی نگه‌داری می‌شود.
+        </p>
+        <p>
+            پس از پایان مسابقه، اصل این امانت در محاسبه جوایز لحاظ می‌شود و
+            بازیکنان برتر علاوه بر اصل مبلغ، <strong>سود</strong> نیز دریافت می‌کنند.
+        </p>
+    </section>
+
+    <section class="card two-col">
+        <h2>قوانین ورود</h2>
+        <ul class="list">
+            <li>فقط این مبالغ مجاز هستند: {% for fee in allowed_fees %}<strong>{{ fee }}</strong>{% if not loop.last %}، {% endif %}{% endfor %} تومان</li>
+            <li>برای شروع مسابقه حضور <strong>{{ required_players }}</strong> بازیکن الزامی است.</li>
+            <li>مبلغ پرداختی شما به عنوان <strong>امانت</strong> داخل صندوق بازی ثبت می‌شود.</li>
+            <li>بعد از پایان بازی، صندوق بر اساس رتبه بین نفرات و مدیر تقسیم می‌شود.</li>
+        </ul>
+    </section>
+
+    <section class="card two-col">
+        <h2>تقسیم صندوق امانت</h2>
+        <p>اگر هر نفر <strong>{{ entry_fee }}</strong> تومان وارد کند، صندوق تقریبی مسابقه برابر است با:</p>
+        <p><strong>{{ estimated_pool }}</strong> تومان</p>
+
+        <ul class="list">
+            <li>نفر اول: <strong>45٪</strong> ≈ {{ first_share }} تومان</li>
+            <li>نفر دوم: <strong>35٪</strong> ≈ {{ second_share }} تومان</li>
+            <li>نفر سوم: <strong>15٪</strong> ≈ {{ third_share }} تومان</li>
+            <li>سهم مدیر: <strong>5٪</strong> ≈ {{ admin_share }} تومان</li>
+        </ul>
+    </section>
+
+    <section class="card">
+        <h2>قانون برداشت سود</h2>
+        <p>
+            سود شما از اصل امانت جدا ثبت می‌شود.
+            هر زمان که <strong>سود خالص شما به 10000 تومان یا بیشتر</strong> برسد،
+            امکان ثبت <strong>درخواست برداشت سود</strong> برای شما فعال می‌شود.
+        </p>
+        <p class="muted">
+            این شفافیت باعث می‌شود کاربر بداند مبلغ پرداختی او هزینه نیست،
+            بلکه یک امانت قابل محاسبه در جریان بازی است.
+        </p>
+
+        <div class="nav">
+            <a href="/login">ورود</a>
+            <a class="ghost" href="/register">ثبت نام</a>
+        </div>
+    </section>
+</div>
+{% endblock %}

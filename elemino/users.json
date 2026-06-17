@@ -1,0 +1,59 @@
+[
+  {
+    "username": "h5240128855",
+    "name": "حسن",
+    "wallet": 0,
+    "entry_paid": true,
+    "blocked": false,
+    "theme": "green",
+    "last_payment_ref": "MOCK-ad7c49f2",
+    "password": "",
+    "bio": "",
+    "avatar": "👤",
+    "settings": {
+      "theme": "green",
+      "sound": "on",
+      "notifications": "on",
+      "font_size": "medium",
+      "language": "fa"
+    }
+  },
+  {
+    "username": "a0158465865",
+    "name": "امیر",
+    "wallet": 0,
+    "entry_paid": true,
+    "blocked": false,
+    "theme": "green",
+    "last_payment_ref": "MOCK-682ceb5a",
+    "password": "",
+    "bio": "",
+    "avatar": "👤",
+    "settings": {
+      "theme": "green",
+      "sound": "on",
+      "notifications": "on",
+      "font_size": "medium",
+      "language": "fa"
+    }
+  },
+  {
+    "username": "z5240122377",
+    "name": "زهره",
+    "wallet": 0,
+    "entry_paid": true,
+    "blocked": false,
+    "theme": "green",
+    "last_payment_ref": "MOCK-b971c8fe",
+    "password": "",
+    "bio": "",
+    "avatar": "👤",
+    "settings": {
+      "theme": "green",
+      "sound": "on",
+      "notifications": "on",
+      "font_size": "medium",
+      "language": "fa"
+    }
+  }
+]

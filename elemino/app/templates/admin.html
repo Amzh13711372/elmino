@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}پنل ادمین | علمینو{% endblock %}
+
+{% block content %}
+<div class="simple-card">
+  <h2>پنل ادمین</h2>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+    <a href="/admin/questions" class="btn">مدیریت سوالات</a>
+    <a href="/admin/questions/generate" class="btn green">تولید سوال هوشمند</a>
+    <a href="/reset-game" class="btn red">ریست بازی</a>
+  </div>
+</div>
+
+<div class="simple-card">
+  <h3>وضعیت بازی</h3>
+  <p>وضعیت: {{ state.status }}</p>
+  <p>تعداد شرکت‌کنندگان: {{ state.participants|length }}</p>
+  <p>تعداد سوالات بانک: {{ questions_count }}</p>
+</div>
+
+<div class="simple-card">
+  <h3>کاربران</h3>
+  <div style="overflow:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>آواتار</th>
+          <th>نام</th>
+          <th>نام کاربری</th>
+          <th>کیف پول</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><img src="{{ u.avatar }}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;"></td>
+          <td>{{ u.name }}</td>
+          <td>{{ u.username }}</td>
+          <td>{{ u.wallet }}</td>
+          <td><a href="/admin/delete-user/{{ u.username }}" class="btn red">حذف</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

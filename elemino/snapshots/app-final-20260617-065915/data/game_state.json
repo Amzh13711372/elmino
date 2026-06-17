@@ -1,0 +1,20 @@
+{
+  "players": 3,
+  "prize_pool": 30000,
+  "current_question": {
+    "id": "q_1",
+    "question": "پایتون چه نوع زبانی است؟",
+    "options": [
+      "برنامه‌نویسی",
+      "طراحی",
+      "شبکه",
+      "سخت‌افزار"
+    ],
+    "answer": 0
+  },
+  "used_question_ids": [
+    "q_1"
+  ],
+  "started": true,
+  "status": "started"
+}

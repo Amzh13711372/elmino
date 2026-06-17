@@ -1,0 +1,48 @@
+[
+  {
+    "played_at": "2026-06-17T03:53:16.449342",
+    "entry_fee": 1000,
+    "pool": 3000,
+    "admin_reward": 150,
+    "players": [
+      {
+        "username": "z5240122377",
+        "rank": 1,
+        "reward": 1350
+      },
+      {
+        "username": "m0158465865",
+        "rank": 2,
+        "reward": 1050
+      },
+      {
+        "username": "h5240128855",
+        "rank": 3,
+        "reward": 450
+      }
+    ]
+  },
+  {
+    "played_at": "2026-06-17T03:47:50.244541",
+    "entry_fee": 1000,
+    "pool": 3000,
+    "admin_reward": 150,
+    "players": [
+      {
+        "username": "m0158465865",
+        "rank": 1,
+        "reward": 1350
+      },
+      {
+        "username": "z5240122377",
+        "rank": 2,
+        "reward": 1050
+      },
+      {
+        "username": "h5240128855",
+        "rank": 3,
+        "reward": 450
+      }
+    ]
+  }
+]
